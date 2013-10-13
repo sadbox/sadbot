@@ -1,0 +1,5 @@
+<Config>    
+    <Channel>#sadtest</Channel>
+    <DBConn>USER:PASSWORD@HOST:PORT/DB</DBConn>
+    <BotName>sadbot_copy</BotName>
+</Config>
