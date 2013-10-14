@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+    "html"
 )
 
 type Config struct {
@@ -34,7 +35,7 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 	titleend := strings.Index(stringbody, "</title>")
 	if titlestart != -1 && titlestart != -1 {
 		title := string(respbody[titlestart+7 : titleend])
-		title = "Title: " + title
+		title = "Title: " + html.UnescapeString(title)
 		conn.Privmsg(channel, title)
 	}
 }
