@@ -35,8 +35,10 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 	titleend := strings.Index(stringbody, "</title>")
 	if titlestart != -1 && titlestart != -1 {
 		title := string(respbody[titlestart+7 : titleend])
-		title = "Title: " + html.UnescapeString(title)
-		conn.Privmsg(channel, title)
+		if strings.TrimSpace(title) != "" {
+			title = "Title: " + html.UnescapeString(title)
+			conn.Privmsg(channel, title)
+		}
 	}
 }
 
@@ -49,7 +51,7 @@ NextWord:
 		if strings.HasPrefix(word, "http") {
 			for _, subUrl := range urllist {
 				if subUrl == word {
-					break NextWord
+					continue NextWord
 				}
 			}
 			numlinks++
