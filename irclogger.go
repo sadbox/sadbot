@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -21,7 +22,12 @@ type Config struct {
 
 var config Config
 
+var urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
+
 func sendUrl(channel, url string, conn *irc.Conn) {
+	if !strings.HasPrefix(url, "http://") {
+		url = "http://" + url
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		return
@@ -36,8 +42,9 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 	if titlestart != -1 && titlestart != -1 {
 		title := string(respbody[titlestart+7 : titleend])
 		if strings.TrimSpace(title) != "" {
-			title = "Title: " + html.UnescapeString(title)
-			conn.Privmsg(channel, title)
+			title = "Title: " + html.UnescapeString(title) + " (" + url + ")"
+			log.Println(title)
+			conn.Privmsg(channel, strings.Replace(title, "\n", " ", -1))
 		}
 	}
 }
@@ -48,7 +55,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 NextWord:
 	for _, word := range strings.Split(line.Args[1], " ") {
 		word = strings.TrimSpace(word)
-		if strings.HasPrefix(word, "http") {
+		if urlRegex.MatchString(word) {
 			for _, subUrl := range urllist {
 				if subUrl == word {
 					continue NextWord
@@ -74,15 +81,23 @@ NextWord:
 	}
 }
 
-func main() {
+func init() {
+	log.Println("Starting sadbot")
+
 	flag.Parse()
+
+	if regexErr != nil {
+		log.Panic(regexErr)
+	}
 
 	xmlFile, err := ioutil.ReadFile("config.xml")
 	if err != nil {
 		log.Fatal(err)
 	}
 	xml.Unmarshal(xmlFile, &config)
+}
 
+func main() {
 	log.Printf("Joining channel %s", config.Channel)
 
 	c := irc.SimpleClient(config.BotName)
