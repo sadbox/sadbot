@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -67,12 +66,6 @@ func main() {
 		log.Fatal(err)
 	}
 	xml.Unmarshal(xmlFile, &config)
-
-	logfile, err := os.OpenFile("/var/log/sadbot", os.O_RDWR|os.O_APPEND, 0660)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.SetOutput(logfile)
 
 	log.Printf("Joining channel %s", config.Channel)
 
