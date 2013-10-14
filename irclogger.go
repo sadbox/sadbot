@@ -42,10 +42,10 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 	titleend := strings.Index(stringbody, "</title>")
 	if titlestart != -1 && titlestart != -1 {
 		title := string(respbody[titlestart+7 : titleend])
-		if strings.TrimSpace(title) != "" {
+        title = strings.TrimSpace(title)
+		if title != "" {
 			title = "Title: " + html.UnescapeString(title) + " (" + url + ")"
-			log.Println(title)
-			conn.Privmsg(channel, strings.Replace(title, "\n", " ", -1))
+			conn.Privmsg(channel, title)
 		}
 	}
 }
