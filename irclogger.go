@@ -16,9 +16,11 @@ import (
 )
 
 type Config struct {
-	Channel string
-	DBConn  string
-	BotName string
+	Channel  string
+	DBConn   string
+	Nick     string
+	Ident    string
+	FullName string
 }
 
 var (
@@ -112,8 +114,9 @@ func init() {
 
 func main() {
 	log.Printf("Joining channel %s", config.Channel)
+	log.Printf("Nick: %s Ident: %s FullName: %s", config.Nick, config.Ident, config.FullName)
 
-	c := irc.SimpleClient(config.BotName)
+	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
 	c.AddHandler(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {

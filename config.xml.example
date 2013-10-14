@@ -1,5 +1,7 @@
 <Config>    
     <Channel>#sadtest</Channel>
     <DBConn>USER:PASSWORD@HOST:PORT/DB</DBConn>
-    <BotName>sadbot_copy</BotName>
+    <Nick>sadbot</Nick>
+    <Ident>sadbot</Ident>
+    <FullName>sadbox's bot</FullName>
 </Config>
