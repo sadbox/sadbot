@@ -41,21 +41,22 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 }
 
 func handleMessage(conn *irc.Conn, line *irc.Line) {
-    urllist := []string{}
-    numlinks := 0
-    NextWord: for _, word := range strings.Split(line.Args[1], " ") {
+	urllist := []string{}
+	numlinks := 0
+NextWord:
+	for _, word := range strings.Split(line.Args[1], " ") {
 		word = strings.TrimSpace(word)
 		if strings.HasPrefix(word, "http") {
-            for _, subUrl := range urllist {
-                if subUrl == word {
-                    break NextWord
-                }
-            }
-            numlinks++
-            if numlinks > 3 {
-                break
-            }
-            urllist = append(urllist, word)
+			for _, subUrl := range urllist {
+				if subUrl == word {
+					break NextWord
+				}
+			}
+			numlinks++
+			if numlinks > 3 {
+				break
+			}
+			urllist = append(urllist, word)
 			go sendUrl(line.Args[0], word, conn)
 		}
 
