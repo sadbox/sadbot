@@ -11,8 +11,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-    "time"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -52,19 +52,19 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 }
 
 func dance(channel string, conn *irc.Conn) {
-    conn.Privmsg(channel, ":D-<")
-    time.Sleep(500 * time.Millisecond)
-    conn.Privmsg(channel, ":D|<")
-    time.Sleep(500 * time.Millisecond)
-    conn.Privmsg(channel, ":D/<")
+	conn.Privmsg(channel, ":D-<")
+	time.Sleep(500 * time.Millisecond)
+	conn.Privmsg(channel, ":D|<")
+	time.Sleep(500 * time.Millisecond)
+	conn.Privmsg(channel, ":D/<")
 }
 
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
-    if strings.HasPrefix(line.Args[1], "!dance") && line.Nick == "sadbox" {
-        go dance(line.Args[0], conn)
-    }
+	if strings.HasPrefix(line.Args[1], "!dance") && line.Nick == "sadbox" {
+		go dance(line.Args[0], conn)
+	}
 NextWord:
 	for _, word := range strings.Split(line.Args[1], " ") {
 		word = strings.TrimSpace(word)
