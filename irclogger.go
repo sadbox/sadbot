@@ -64,9 +64,17 @@ func dance(channel string, conn *irc.Conn) {
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
+
 	if strings.HasPrefix(line.Args[1], "!dance") && line.Nick == "sadbox" {
 		go dance(line.Args[0], conn)
+	} else if strings.HasPrefix(line.Args[1], "!audio") && line.Nick == "sadbox" {
+		conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
+	} else if strings.HasPrefix(line.Args[1], "!hacking") {
+		conn.Privmsg(line.Args[0], "This channel is about keyboards (not hacking), please read the topic.")
+	} else if strings.HasPrefix(line.Args[1], "!help") {
+		conn.Privmsg(line.Args[0], "Available commands are !hacking, !dance, and !audio")
 	}
+
 NextWord:
 	for _, word := range strings.Split(line.Args[1], " ") {
 		word = strings.TrimSpace(word)
