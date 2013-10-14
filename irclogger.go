@@ -6,11 +6,11 @@ import (
 	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
+	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
-    "html"
 )
 
 type Config struct {
