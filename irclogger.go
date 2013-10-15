@@ -6,71 +6,71 @@ import (
 	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/tv42/base58"
 	"html"
 	"io/ioutil"
 	"log"
+	"math/big"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
-    "math/rand"
-    "math/big"
-    "github.com/tv42/base58"
 )
 
 type Config struct {
-	Channel  string
-	DBConn   string
-	Nick     string
-	Ident    string
-	FullName string
-    FlickrAPIKey string
+	Channel      string
+	DBConn       string
+	Nick         string
+	Ident        string
+	FullName     string
+	FlickrAPIKey string
 }
 
 var (
 	config             Config
 	urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
-    helpstring = "Available commands are !hacking, !help, and !haata"
+	helpstring         = "Available commands are !hacking, !help, and !haata"
 )
 
 type Setresp struct {
-    Sets []Set `xml:"collections>collection>set"`
+	Sets []Set `xml:"collections>collection>set"`
 }
 
 type Set struct {
-    Id string `xml:"id,attr"`
-    Title string `xml:"title,attr"`
-    Description string `xml:"description,attr"`
+	Id          string `xml:"id,attr"`
+	Title       string `xml:"title,attr"`
+	Description string `xml:"description,attr"`
 }
 
 type Photoresp struct {
-    Photos []Photo `xml:"photoset>photo"`
+	Photos []Photo `xml:"photoset>photo"`
 }
 
 type Photo struct {
-    Id int64 `xml:"id,attr"`
-    Secret string `xml:"secret,attr"`
-    Server string `xml:"server,attr"`
-    Farm string `xml:"farm,attr"`
-    Title string `xml:"title,attr"`
-    Isprimary string `xml:"isprimary,attr"`
+	Id        int64  `xml:"id,attr"`
+	Secret    string `xml:"secret,attr"`
+	Server    string `xml:"server,attr"`
+	Farm      string `xml:"farm,attr"`
+	Title     string `xml:"title,attr"`
+	Isprimary string `xml:"isprimary,attr"`
 }
 
 func htmlfetch(url string) ([]byte, error) {
-    resp, err := http.Get(url)
-    if err != nil {
-        return nil, err
-    }
-    respbody, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        return nil, err
-    }
-    return respbody, nil
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	respbody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return respbody, nil
 }
 
 func random(limit int) int {
-    rand.Seed(time.Now().Unix())
-    return rand.Intn(limit)
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(limit)
 }
 
 func sendUrl(channel, url string, conn *irc.Conn) {
@@ -107,27 +107,26 @@ func dance(channel string, conn *irc.Conn) {
 }
 
 func haata(channel string, conn *irc.Conn) {
-    sets, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.collections.getTree&api_key=`+config.FlickrAPIKey+`&user_id=57321699@N06&collection_id=57276377-72157635417889224`)
-    if err != nil {
-        return
-    }
-    var setresp Setresp
-    xml.Unmarshal(sets, &setresp)
-    randsetindex := random(len(setresp.Sets))
-    randset := setresp.Sets[randsetindex].Id
+	sets, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.collections.getTree&api_key=` + config.FlickrAPIKey + `&user_id=57321699@N06&collection_id=57276377-72157635417889224`)
+	if err != nil {
+		return
+	}
+	var setresp Setresp
+	xml.Unmarshal(sets, &setresp)
+	randsetindex := random(len(setresp.Sets))
+	randset := setresp.Sets[randsetindex].Id
 
-    pics, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos&api_key=`+config.FlickrAPIKey+`&photoset_id=`+randset)
-    if err != nil {
-        return
-    }
-    var photoresp Photoresp
-    xml.Unmarshal(pics, &photoresp)
-    randpic := random(len(photoresp.Photos))
-    returnbytes := []byte{}
-    photostring := string(base58.EncodeBig(returnbytes, big.NewInt(photoresp.Photos[randpic].Id)))
-    conn.Privmsg(channel, `http://flic.kr/p/` + photostring)
+	pics, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos&api_key=` + config.FlickrAPIKey + `&photoset_id=` + randset)
+	if err != nil {
+		return
+	}
+	var photoresp Photoresp
+	xml.Unmarshal(pics, &photoresp)
+	randpic := random(len(photoresp.Photos))
+	returnbytes := []byte{}
+	photostring := string(base58.EncodeBig(returnbytes, big.NewInt(photoresp.Photos[randpic].Id)))
+	conn.Privmsg(channel, `http://flic.kr/p/`+photostring)
 }
-
 
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
@@ -142,8 +141,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	} else if strings.HasPrefix(line.Args[1], "!help") {
 		conn.Privmsg(line.Args[0], helpstring)
 	} else if strings.HasPrefix(line.Args[1], "!haata") {
-        go haata(line.Args[0], conn)
-    }
+		go haata(line.Args[0], conn)
+	}
 
 NextWord:
 	for _, word := range strings.Split(line.Args[1], " ") {
