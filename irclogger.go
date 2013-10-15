@@ -107,6 +107,9 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 		title := string(respbody[titlestart+7 : titleend])
 		title = strings.TrimSpace(title)
 		if title != "" {
+			if len(url) > 30 {
+				url = string([]byte(url)[:30]) + "..."
+			}
 			title = "Title: " + html.UnescapeString(title) + " (" + url + ")"
 			log.Println(title)
 			conn.Privmsg(channel, title)
