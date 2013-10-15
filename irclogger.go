@@ -25,6 +25,7 @@ type Config struct {
 	Ident        string
 	FullName     string
 	FlickrAPIKey string
+    IRCPass string
 }
 
 var (
@@ -198,6 +199,7 @@ func main() {
 	c.AddHandler(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
 			conn.Join(config.Channel)
+            conn.Privmsg("nickserv", "identify " + config.Nick + " " + config.IRCPass)
 			log.Println("Connected!")
 		})
 
