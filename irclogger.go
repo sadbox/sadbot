@@ -126,7 +126,7 @@ func haata(channel string, conn *irc.Conn) {
 	randpic := random(len(photoresp.Photos))
 	returnbytes := []byte{}
 	photostring := string(base58.EncodeBig(returnbytes, big.NewInt(photoresp.Photos[randpic].Id)))
-	conn.Privmsg(channel, `http://flic.kr/p/`+photostring)
+	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
 }
 
 func handleMessage(conn *irc.Conn, line *irc.Line) {
