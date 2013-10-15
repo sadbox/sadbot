@@ -8,6 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/tv42/base58"
 	"html"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/big"
@@ -75,17 +76,30 @@ func random(limit int) int {
 }
 
 func sendUrl(channel, url string, conn *irc.Conn) {
+	log.Println("Fetching title for " + url + " In channel " + channel)
 	if !strings.HasPrefix(url, "http://") {
-		url = "http://" + url
+		if !strings.HasPrefix(url, "https://") {
+			url = "http://" + url
+		}
 	}
 	resp, err := http.Get(url)
 	if err != nil {
+		log.Println(err)
 		return
 	}
-	respbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
+	buf := make([]byte, 1024)
+	respbody := []byte{}
+	for i := 0; i < 30; i++ {
+		n, err := resp.Body.Read(buf)
+		if err != nil && err != io.EOF {
+			return
+		}
+		if n == 0 {
+			break
+		}
+		respbody = append(respbody, buf[:n]...)
 	}
+
 	stringbody := string(respbody)
 	titlestart := strings.Index(stringbody, "<title>")
 	titleend := strings.Index(stringbody, "</title>")
@@ -94,6 +108,7 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 		title = strings.TrimSpace(title)
 		if title != "" {
 			title = "Title: " + html.UnescapeString(title) + " (" + url + ")"
+			log.Println(title)
 			conn.Privmsg(channel, title)
 		}
 	}
