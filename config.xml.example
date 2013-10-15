@@ -1,7 +1,8 @@
 <Config>    
     <Channel>#sadtest</Channel>
-    <DBConn>USER:PASSWORD@HOST:PORT/DB</DBConn>
+    <DBConn>USER:PASS@HOST:PORT/DB</DBConn>
     <Nick>sadbot</Nick>
     <Ident>sadbot</Ident>
     <FullName>sadbox's bot</FullName>
+    <FlickrAPIKey>LONG STRING HERE</FlickrAPIKey>
 </Config>
