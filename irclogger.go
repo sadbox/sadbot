@@ -24,6 +24,7 @@ var (
 	config                  Config
 	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
+	flickrApiUrl            = "http://api.flickr.com/services/rest/"
 )
 
 type Config struct {
@@ -134,8 +135,21 @@ func dance(channel string, conn *irc.Conn) {
 }
 
 func haata(channel string, conn *irc.Conn) {
-	sets, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.collections.getTree&api_key=` + config.FlickrAPIKey + `&user_id=57321699@N06&collection_id=57276377-72157635417889224`)
+	flickrUrl, err := url.Parse(flickrApiUrl)
 	if err != nil {
+		log.Println(err)
+		return
+	}
+	v := flickrUrl.Query()
+	v.Set("method", "flickr.collections.getTree")
+	v.Set("api_key", config.FlickrAPIKey)
+	v.Set("user_id", "57321699@N06")
+	v.Set("collection_id", "57276377-72157635417889224")
+	flickrUrl.RawQuery = v.Encode()
+
+	sets, err := htmlfetch(flickrUrl.String())
+	if err != nil {
+		log.Println(err)
 		return
 	}
 	var setresp Setresp
@@ -143,8 +157,20 @@ func haata(channel string, conn *irc.Conn) {
 	randsetindex := random(len(setresp.Sets))
 	randset := setresp.Sets[randsetindex].Id
 
-	pics, err := htmlfetch(`http://api.flickr.com/services/rest/?method=flickr.photosets.getPhotos&api_key=` + config.FlickrAPIKey + `&photoset_id=` + randset)
+	flickrUrl, err = url.Parse(flickrApiUrl)
 	if err != nil {
+		log.Println(err)
+		return
+	}
+	v = flickrUrl.Query()
+	v.Set("method", "flickr.photosets.getPhotos")
+	v.Set("api_key", config.FlickrAPIKey)
+	v.Set("photoset_id", randset)
+	flickrUrl.RawQuery = v.Encode()
+
+	pics, err := htmlfetch(flickrUrl.String())
+	if err != nil {
+		log.Println(err)
 		return
 	}
 	var photoresp Photoresp
