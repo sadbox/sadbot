@@ -88,6 +88,7 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		log.Println(err)
 		return
 	}
+	defer resp.Body.Close()
 	buf := make([]byte, 1024)
 	respbody := []byte{}
 	for i := 0; i < 30; i++ {
@@ -144,8 +145,7 @@ func haata(channel string, conn *irc.Conn) {
 	var photoresp Photoresp
 	xml.Unmarshal(pics, &photoresp)
 	randpic := random(len(photoresp.Photos))
-	returnbytes := []byte{}
-	photostring := string(base58.EncodeBig(returnbytes, big.NewInt(photoresp.Photos[randpic].Id)))
+	photostring := string(base58.EncodeBig([]byte{}, big.NewInt(photoresp.Photos[randpic].Id)))
 	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
 }
 
