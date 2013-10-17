@@ -31,9 +31,10 @@ type Config struct {
 }
 
 var (
-	config             Config
-	urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
-	helpstring         = "Available commands are !hacking, !help, !haata, and !stats"
+	config                  Config
+	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
+	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
+	helpstring              = "Available commands are !hacking, !help, !haata, and !stats"
 )
 
 type Setresp struct {
@@ -78,11 +79,10 @@ func random(limit int) int {
 
 func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	log.Println("Fetching title for " + postedUrl + " In channel " + channel)
-	if !strings.HasPrefix(postedUrl, "http://") {
-		if !strings.HasPrefix(postedUrl, "https://") {
-			postedUrl = "http://" + postedUrl
-		}
+	if !httpRegex.MatchString(postedUrl) {
+		postedUrl = "http://" + postedUrl
 	}
+
 	resp, err := http.Get(postedUrl)
 	if err != nil {
 		log.Println(err)
@@ -203,6 +203,9 @@ func init() {
 
 	if regexErr != nil {
 		log.Panic(regexErr)
+	}
+	if httpRegexErr != nil {
+		log.Panic(httpRegexErr)
 	}
 
 	xmlFile, err := ioutil.ReadFile("config.xml")
