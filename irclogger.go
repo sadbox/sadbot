@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ type Config struct {
 var (
 	config             Config
 	urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
-	helpstring         = "Available commands are !hacking, !help, and !haata"
+	helpstring         = "Available commands are !hacking, !help, !haata, and !stats"
 )
 
 type Setresp struct {
@@ -75,14 +76,14 @@ func random(limit int) int {
 	return rand.Intn(limit)
 }
 
-func sendUrl(channel, url string, conn *irc.Conn) {
-	log.Println("Fetching title for " + url + " In channel " + channel)
-	if !strings.HasPrefix(url, "http://") {
-		if !strings.HasPrefix(url, "https://") {
-			url = "http://" + url
+func sendUrl(channel, postedUrl string, conn *irc.Conn) {
+	log.Println("Fetching title for " + postedUrl + " In channel " + channel)
+	if !strings.HasPrefix(postedUrl, "http://") {
+		if !strings.HasPrefix(postedUrl, "https://") {
+			postedUrl = "http://" + postedUrl
 		}
 	}
-	resp, err := http.Get(url)
+	resp, err := http.Get(postedUrl)
 	if err != nil {
 		log.Println(err)
 		return
@@ -107,10 +108,11 @@ func sendUrl(channel, url string, conn *irc.Conn) {
 		title := string(respbody[titlestart+7 : titleend])
 		title = strings.TrimSpace(title)
 		if title != "" {
-			if len(url) > 30 {
-				url = string([]byte(url)[:30]) + "..."
+			parsedurl, err := url.Parse(postedUrl)
+			if err == nil {
+				postedUrl = parsedurl.Host
 			}
-			title = "Title: " + html.UnescapeString(title) + " (" + url + ")"
+			title = "Title: " + html.UnescapeString(title) + " (at " + postedUrl + ")"
 			log.Println(title)
 			conn.Privmsg(channel, title)
 		}
@@ -161,6 +163,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		conn.Privmsg(line.Args[0], helpstring)
 	} else if strings.HasPrefix(line.Args[1], "!haata") {
 		go haata(line.Args[0], conn)
+	} else if strings.HasPrefix(line.Args[1], "!stats") {
+		conn.Privmsg(line.Args[0], "http://sadbox.org/geekhack")
 	}
 
 NextWord:
