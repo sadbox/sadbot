@@ -20,6 +20,12 @@ import (
 	"time"
 )
 
+var (
+	config                  Config
+	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
+	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
+)
+
 type Config struct {
 	Channel      string
 	DBConn       string
@@ -28,14 +34,13 @@ type Config struct {
 	FullName     string
 	FlickrAPIKey string
 	IRCPass      string
+	Commands     []Command `xml:">Command"`
 }
 
-var (
-	config                  Config
-	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
-	helpstring              = "Available commands are !hacking, !help, !haata, and !stats"
-)
+type Command struct {
+	Name string
+	Text string
+}
 
 type Setresp struct {
 	Sets []Set `xml:"collections>collection>set"`
@@ -153,18 +158,20 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
 
+	// Special commands
 	if strings.HasPrefix(line.Args[1], "!dance") && line.Nick == "sadbox" {
 		go dance(line.Args[0], conn)
 	} else if strings.HasPrefix(line.Args[1], "!audio") && line.Nick == "sadbox" {
 		conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
-	} else if strings.HasPrefix(line.Args[1], "!hacking") {
-		conn.Privmsg(line.Args[0], "This channel is about keyboards (not hacking), please read the topic.")
-	} else if strings.HasPrefix(line.Args[1], "!help") {
-		conn.Privmsg(line.Args[0], helpstring)
 	} else if strings.HasPrefix(line.Args[1], "!haata") {
 		go haata(line.Args[0], conn)
-	} else if strings.HasPrefix(line.Args[1], "!stats") {
-		conn.Privmsg(line.Args[0], "http://sadbox.org/geekhack")
+	}
+
+	// Commands that are read in from the config file
+	for _, command := range config.Commands {
+		if strings.HasPrefix(line.Args[1], command.Name) {
+			conn.Privmsg(line.Args[0], command.Text)
+		}
 	}
 
 NextWord:
@@ -218,6 +225,12 @@ func init() {
 func main() {
 	log.Printf("Joining channel %s", config.Channel)
 	log.Printf("Nick: %s Ident: %s FullName: %s", config.Nick, config.Ident, config.FullName)
+
+	log.Printf("Loading %d commands", len(config.Commands))
+	for index, command := range config.Commands {
+		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
+	}
+	log.Printf("Finished loading commands")
 
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
