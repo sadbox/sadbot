@@ -204,7 +204,9 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	// Special commands
 	switch strings.TrimSpace(strings.Split(line.Args[1], " ")[0]) {
 	case "!dance":
-		go dance(line.Args[0], conn)
+		if line.Nick == "sadbox" {
+			go dance(line.Args[0], conn)
+		}
 	case "!audio":
 		if line.Nick == "sadbox" {
 			conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
