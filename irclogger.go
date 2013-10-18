@@ -291,10 +291,11 @@ func init() {
 func main() {
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
+	c.SSL = true
+
 	c.AddHandler(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
 			conn.Join(config.Channel)
-			conn.Privmsg("nickserv", "identify "+config.Nick+" "+config.IRCPass)
 			log.Println("Connected!")
 		})
 
@@ -305,7 +306,7 @@ func main() {
 
 	c.AddHandler("PRIVMSG", handleMessage)
 
-	if err := c.Connect("irc.freenode.net"); err != nil {
+	if err := c.Connect("irc.freenode.net", config.Nick+":"+config.IRCPass); err != nil {
 		log.Fatalln("Connection error: %s\n", err)
 	}
 
