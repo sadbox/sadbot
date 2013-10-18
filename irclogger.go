@@ -21,8 +21,11 @@ import (
 )
 
 var (
-	config                  Config
-	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
+	config             Config
+	urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[` +
+		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
+		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
+		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
 )
 
@@ -44,6 +47,7 @@ type Command struct {
 	Text string
 }
 
+// The following four structs are all for the flickr api
 type Setresp struct {
 	Sets []Set `xml:"collections>collection>set"`
 }
@@ -67,6 +71,7 @@ type Photo struct {
 	Isprimary string `xml:"isprimary,attr"`
 }
 
+// Just grab the page, don't care much about errors
 func htmlfetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -84,6 +89,7 @@ func random(limit int) int {
 	return rand.Intn(limit)
 }
 
+// Try and grab the title for any URL's posted in the channel
 func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	log.Println("Fetching title for " + postedUrl + " In channel " + channel)
 	if !httpRegex.MatchString(postedUrl) {
@@ -96,6 +102,8 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		return
 	}
 	defer resp.Body.Close()
+	// This is necessary because if you do an ioutil.ReadAll() it will
+	// block until the entire thing is read... which could be painful
 	buf := make([]byte, 1024)
 	respbody := []byte{}
 	for i := 0; i < 30; i++ {
@@ -118,8 +126,11 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		if title != "" {
 			parsedurl, err := url.Parse(postedUrl)
 			if err == nil {
+				// This should only be the google.com in google.com/search&q=blah
 				postedUrl = parsedurl.Host
 			}
+			// Example:
+			// Title: sadbox . org (at sadbox.org)
 			title = "Title: " + html.UnescapeString(title) + " (at " + postedUrl + ")"
 			log.Println(title)
 			conn.Privmsg(channel, title)
@@ -127,6 +138,7 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	}
 }
 
+// http://bash.org/?4281
 func dance(channel string, conn *irc.Conn) {
 	conn.Privmsg(channel, ":D-<")
 	time.Sleep(500 * time.Millisecond)
@@ -135,6 +147,7 @@ func dance(channel string, conn *irc.Conn) {
 	conn.Privmsg(channel, ":D/<")
 }
 
+// Fetch a random picture from one of Haata's keyboard sets
 func haata(channel string, conn *irc.Conn) {
 	flickrUrl, err := url.Parse(flickrApiUrl)
 	if err != nil {
@@ -144,7 +157,9 @@ func haata(channel string, conn *irc.Conn) {
 	v := flickrUrl.Query()
 	v.Set("method", "flickr.collections.getTree")
 	v.Set("api_key", config.FlickrAPIKey)
+	// triplehaata's user_id
 	v.Set("user_id", "57321699@N06")
+	// Only the keyboard pics
 	v.Set("collection_id", "57276377-72157635417889224")
 	flickrUrl.RawQuery = v.Encode()
 
@@ -177,6 +192,8 @@ func haata(channel string, conn *irc.Conn) {
 	var photoresp Photoresp
 	xml.Unmarshal(pics, &photoresp)
 	randpic := random(len(photoresp.Photos))
+	// flickr's short url's are encoded using base58... this seems messy
+	// Maybe use the proper long url?
 	photostring := string(base58.EncodeBig([]byte{}, big.NewInt(photoresp.Photos[randpic].Id)))
 	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
 }
@@ -197,6 +214,8 @@ func googSearch(channel, query string, conn *irc.Conn) {
 	conn.Privmsg(channel, searchUrl.String())
 }
 
+// This function does all the dispatching for various commands
+// as well as logging each message to the database
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
@@ -246,14 +265,16 @@ NextWord:
 			urllist = append(urllist, word)
 			go sendUrl(line.Args[0], word, conn)
 		}
-
 	}
+
 	db, err := sql.Open("mysql", config.DBConn)
 	if err != nil {
 		log.Println(err)
 	}
 	defer db.Close()
-	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel, Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident, line.Host, line.Src, line.Cmd, line.Args[0], line.Args[1], line.Time)
+	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
+		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
+		line.Host, line.Src, line.Cmd, line.Args[0], line.Args[1], line.Time)
 	if err != nil {
 		log.Println(err)
 	}
@@ -276,6 +297,7 @@ func init() {
 		log.Fatal(err)
 	}
 	xml.Unmarshal(xmlFile, &config)
+
 	log.Println("Loaded config file!")
 	log.Printf("Joining channel %s", config.Channel)
 	log.Printf("Nick: %s", config.Nick)
