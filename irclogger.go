@@ -24,8 +24,9 @@ var (
 	config                  Config
 	urlRegex, regexErr      = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
-	flickrApiUrl            = "http://api.flickr.com/services/rest/"
 )
+
+const flickrApiUrl = "http://api.flickr.com/services/rest/"
 
 type Config struct {
 	Channel      string
