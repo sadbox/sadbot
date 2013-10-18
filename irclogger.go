@@ -202,15 +202,20 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	numlinks := 0
 
 	// Special commands
-	if strings.HasPrefix(line.Args[1], "!dance") && line.Nick == "sadbox" {
+	switch strings.TrimSpace(strings.Split(line.Args[1], " ")[0]) {
+	case "!dance":
 		go dance(line.Args[0], conn)
-	} else if strings.HasPrefix(line.Args[1], "!audio") && line.Nick == "sadbox" {
-		conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
-	} else if strings.HasPrefix(line.Args[1], "!cst") && line.Nick == "sadbox" {
-		conn.Privmsg(line.Args[0], "13,8#CSTMASTERRACE")
-	} else if strings.HasPrefix(line.Args[1], "!haata") {
+	case "!audio":
+		if line.Nick == "sadbox" {
+			conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
+		}
+	case "!cst":
+		if line.Nick == "sadbox" {
+			conn.Privmsg(line.Args[0], "13,8#CSTMASTERRACE")
+		}
+	case "!haata":
 		go haata(line.Args[0], conn)
-	} else if strings.HasPrefix(line.Args[1], "!search") {
+	case "!search":
 		go googSearch(line.Args[0], line.Args[1], conn)
 	}
 
