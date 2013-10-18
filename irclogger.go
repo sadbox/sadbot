@@ -249,18 +249,19 @@ func init() {
 		log.Fatal(err)
 	}
 	xml.Unmarshal(xmlFile, &config)
-}
-
-func main() {
+	log.Println("Loaded config file!")
 	log.Printf("Joining channel %s", config.Channel)
-	log.Printf("Nick: %s Ident: %s FullName: %s", config.Nick, config.Ident, config.FullName)
+	log.Printf("Nick: %s", config.Nick)
+	log.Printf("Ident: %s", config.Ident)
+	log.Printf("FullName: %s", config.FullName)
 
-	log.Printf("Loading %d commands", len(config.Commands))
+	log.Printf("Found %d commands", len(config.Commands))
 	for index, command := range config.Commands {
 		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
 	}
-	log.Printf("Finished loading commands")
+}
 
+func main() {
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
 	c.AddHandler(irc.CONNECTED,
