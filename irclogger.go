@@ -189,6 +189,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go dance(line.Args[0], conn)
 	} else if strings.HasPrefix(line.Args[1], "!audio") && line.Nick == "sadbox" {
 		conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
+	} else if strings.HasPrefix(line.Args[1], "!cst") && line.Nick == "sadbox" {
+		conn.Privmsg(line.Args[0], "13,8#CSTMASTERRACE")
 	} else if strings.HasPrefix(line.Args[1], "!haata") {
 		go haata(line.Args[0], conn)
 	}
