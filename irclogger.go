@@ -201,8 +201,10 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
 
+	splitmessage := strings.Split(line.Args[1], " ")
+
 	// Special commands
-	switch strings.TrimSpace(strings.Split(line.Args[1], " ")[0]) {
+	switch strings.TrimSpace(splitmessage[0]) {
 	case "!dance":
 		if line.Nick == "sadbox" {
 			go dance(line.Args[0], conn)
@@ -223,13 +225,13 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 
 	// Commands that are read in from the config file
 	for _, command := range config.Commands {
-		if strings.HasPrefix(line.Args[1], command.Name) {
+		if strings.TrimSpace(splitmessage[0]) == command.Name {
 			conn.Privmsg(line.Args[0], command.Text)
 		}
 	}
 
 NextWord:
-	for _, word := range strings.Split(line.Args[1], " ") {
+	for _, word := range splitmessage {
 		word = strings.TrimSpace(word)
 		if urlRegex.MatchString(word) {
 			for _, subUrl := range urllist {
