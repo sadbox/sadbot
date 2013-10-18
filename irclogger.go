@@ -140,11 +140,11 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 
 // http://bash.org/?4281
 func dance(channel string, conn *irc.Conn) {
-	conn.Privmsg(channel, ":D-<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D-<")
 	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, ":D|<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D|<")
 	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, ":D/<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D/<")
 }
 
 // Fetch a random picture from one of Haata's keyboard sets
@@ -234,7 +234,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		}
 	case "!cst":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(line.Args[0], "13,8#CSTMASTERRACE")
+			conn.Privmsg(line.Args[0], "\u000313,8#CSTMASTERRACE")
 		}
 	case "!haata":
 		go haata(line.Args[0], conn)
