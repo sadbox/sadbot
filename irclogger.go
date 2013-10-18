@@ -181,6 +181,22 @@ func haata(channel string, conn *irc.Conn) {
 	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
 }
 
+func googSearch(channel, query string, conn *irc.Conn) {
+	query = strings.TrimSpace(query[7:])
+	if query == "" {
+		conn.Privmsg(channel, "Example: !search stuff and junk")
+		return
+	}
+	searchUrl, err := url.Parse("https://google.com/search")
+	if err != nil {
+		panic(err)
+	}
+	v := searchUrl.Query()
+	v.Set("q", query)
+	searchUrl.RawQuery = v.Encode()
+	conn.Privmsg(channel, searchUrl.String())
+}
+
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
@@ -194,6 +210,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		conn.Privmsg(line.Args[0], "13,8#CSTMASTERRACE")
 	} else if strings.HasPrefix(line.Args[1], "!haata") {
 		go haata(line.Args[0], conn)
+	} else if strings.HasPrefix(line.Args[1], "!search") {
+		go googSearch(line.Args[0], line.Args[1], conn)
 	}
 
 	// Commands that are read in from the config file
