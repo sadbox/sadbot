@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var (
@@ -27,9 +28,14 @@ var (
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
+	markovkeys              []string
+	markovmap               = make(map[string][]string)
 )
 
-const flickrApiUrl = "http://api.flickr.com/services/rest/"
+const (
+	flickrApiUrl = "http://api.flickr.com/services/rest/"
+	PUNCTUATION  = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
+)
 
 type Config struct {
 	Channel      string
@@ -71,6 +77,79 @@ type Photo struct {
 	Isprimary string `xml:"isprimary,attr"`
 }
 
+func cleanspaces(message string) []string {
+	splitmessage := strings.Split(message, " ")
+	var newslice []string
+	for _, word := range splitmessage {
+		if strings.TrimSpace(word) != "" {
+			newslice = append(newslice, strings.Trim(strings.TrimSpace(word), PUNCTUATION))
+		}
+	}
+	return newslice
+}
+
+// Command!
+func markov(channel string, conn *irc.Conn) {
+	var markovchain string
+	messageLength := random(50) + 10
+	for i := 0; i < messageLength; i++ {
+		splitchain := strings.Split(markovchain, " ")
+		if len(splitchain) < 2 {
+			s := []rune(markovkeys[random(len(markovkeys))])
+			s[0] = unicode.ToUpper(s[0])
+			markovchain = string(s)
+			continue
+		}
+		chainlength := len(splitchain)
+		searchfor := strings.ToLower(splitchain[chainlength-2] + " " + splitchain[chainlength-1])
+		if len(markovmap[searchfor]) == 0 || strings.LastIndex(markovchain, ".") < len(markovchain)-50 {
+			s := []rune(markovkeys[random(len(markovkeys))])
+			s[0] = unicode.ToUpper(s[0])
+			markovchain = markovchain + ". " + string(s)
+			continue
+		}
+		randnext := random(len(markovmap[searchfor]))
+		markovchain = markovchain + " " + markovmap[searchfor][randnext]
+	}
+	conn.Privmsg(channel, markovchain+".")
+}
+
+// Build the whole markov chain.. this sits in memory, so adjust the limit and junk
+func makeMarkov() error {
+	db, err := sql.Open("mysql", "irclogger:irclogger@/irclogs")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 10000`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var message string
+		if err := rows.Scan(&message); err != nil {
+			return err
+		}
+		message = strings.ToLower(message)
+		newslice := cleanspaces(message)
+		splitlength := len(newslice)
+		for position, word := range newslice {
+			if splitlength-2 <= position {
+				break
+			}
+			wordkey := word + " " + newslice[position+1]
+			markovmap[wordkey] = append(markovmap[wordkey], newslice[position+2])
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for key, _ := range markovmap {
+		markovkeys = append(markovkeys, key)
+	}
+	return nil
+}
+
 // Just grab the page, don't care much about errors
 func htmlfetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
@@ -85,7 +164,7 @@ func htmlfetch(url string) ([]byte, error) {
 }
 
 func random(limit int) int {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UTC().UnixNano())
 	return rand.Intn(limit)
 }
 
@@ -248,6 +327,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go haata(channel, conn)
 	case "!search":
 		go googSearch(channel, message, conn)
+	case "!chatter":
+		go markov(channel, conn)
 	}
 
 	// Commands that are read in from the config file
@@ -315,6 +396,12 @@ func init() {
 	log.Printf("Found %d commands", len(config.Commands))
 	for index, command := range config.Commands {
 		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
+	}
+
+	log.Println("Loading markov data.")
+	err = makeMarkov()
+	if err != nil {
+		log.Panic(err)
 	}
 }
 
