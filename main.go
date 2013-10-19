@@ -29,9 +29,7 @@ var (
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
-	markovkeys              []string
-	markovmap               = make(map[string][]string)
-	markovMutex             sync.RWMutex
+    markovData Markov
 )
 
 const (
@@ -57,6 +55,17 @@ type Command struct {
 	Name string
 	Text string
 }
+
+type Markov struct {
+    mutex sync.RWMutex
+    keys []string
+    bigmap map[string][]string
+}
+
+func (m *Markov) Init() {
+    m.bigmap = make(map[string][]string)
+}
+
 
 // The following four structs are all for the flickr api
 type Setresp struct {
@@ -145,7 +154,7 @@ func wolfram(channel, query string, conn *irc.Conn) {
 
 func removeChars(bigstring, removeset string) string {
 	for _, character := range removeset {
-		bigstring = strings.Replace(bigstring, string(character), " ", -1)
+		bigstring = strings.Replace(bigstring, string(character), "", -1)
 	}
 	return bigstring
 }
@@ -163,35 +172,35 @@ func cleanspaces(message string) []string {
 
 // Command!
 func markov(channel string, conn *irc.Conn) {
-	markovMutex.RLock()
+	markovData.mutex.RLock()
 	var markovchain string
 	messageLength := random(50) + 10
 	for i := 0; i < messageLength; i++ {
 		splitchain := strings.Split(markovchain, " ")
 		if len(splitchain) < 2 {
-			s := []rune(markovkeys[random(len(markovkeys))])
+			s := []rune(markovData.keys[random(len(markovData.keys))])
 			s[0] = unicode.ToUpper(s[0])
 			markovchain = string(s)
 			continue
 		}
 		chainlength := len(splitchain)
 		searchfor := strings.ToLower(splitchain[chainlength-2] + " " + splitchain[chainlength-1])
-		if len(markovmap[searchfor]) == 0 || strings.LastIndex(markovchain, ".") < len(markovchain)-50 {
-			s := []rune(markovkeys[random(len(markovkeys))])
+		if len(markovData.bigmap[searchfor]) == 0 || strings.LastIndex(markovchain, ".") < len(markovchain)-50 {
+			s := []rune(markovData.keys[random(len(markovData.keys))])
 			s[0] = unicode.ToUpper(s[0])
 			markovchain = markovchain + ". " + string(s)
 			continue
 		}
-		randnext := random(len(markovmap[searchfor]))
-		markovchain = markovchain + " " + markovmap[searchfor][randnext]
+		randnext := random(len(markovData.bigmap[searchfor]))
+		markovchain = markovchain + " " + markovData.bigmap[searchfor][randnext]
 	}
 	conn.Privmsg(channel, markovchain+".")
-	markovMutex.RUnlock()
+	markovData.mutex.RUnlock()
 }
 
 // Build the whole markov chain.. this sits in memory, so adjust the limit and junk
 func makeMarkov() {
-	db, err := sql.Open("mysql", "irclogger:irclogger@/irclogs")
+	db, err := sql.Open("mysql", config.DBConn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -213,16 +222,16 @@ func makeMarkov() {
 				break
 			}
 			wordkey := word + " " + newslice[position+1]
-			markovmap[wordkey] = append(markovmap[wordkey], newslice[position+2])
+			markovData.bigmap[wordkey] = append(markovData.bigmap[wordkey], newslice[position+2])
 		}
 	}
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-	for key, _ := range markovmap {
-		markovkeys = append(markovkeys, key)
+	for key, _ := range markovData.bigmap {
+		markovData.keys = append(markovData.keys, key)
 	}
-	markovMutex.Unlock()
+	markovData.mutex.Unlock()
 }
 
 // Just grab the page, don't care much about errors
@@ -476,7 +485,8 @@ func init() {
 	}
 
 	log.Println("Loading markov data.")
-	markovMutex.Lock()
+    markovData.Init()
+	markovData.mutex.Lock()
 	go makeMarkov()
 }
 
