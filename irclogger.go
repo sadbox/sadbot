@@ -121,7 +121,7 @@ func makeMarkov() error {
 		return err
 	}
 	defer db.Close()
-	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 10000`)
+	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 30000`)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		}
 	case "!cst":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(channel, "\u000313,8#CSTMASTERRACE")
+			conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
 		}
 	case "!haata":
 		go haata(channel, conn)
