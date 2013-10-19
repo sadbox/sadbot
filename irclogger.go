@@ -35,9 +35,10 @@ var (
 )
 
 const (
-	flickrApiUrl = "http://api.flickr.com/services/rest/"
-	PUNCTUATION  = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
-	WHITESPACE   = "\t\n\u000b\u000c\r"
+	flickrApiUrl  = "http://api.flickr.com/services/rest/"
+	wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
+	PUNCTUATION   = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
+	WHITESPACE    = "\t\n\u000b\u000c\r"
 )
 
 type Config struct {
@@ -100,7 +101,7 @@ func wolfram(channel, query string, conn *irc.Conn) {
 		return
 	}
 	log.Printf("Searching wolfram alpha for %s", query)
-	wolf, err := url.Parse(`http://api.wolframalpha.com/v2/query`)
+	wolf, err := url.Parse(wolframAPIUrl)
 	if err != nil {
 		log.Println(err)
 		return
@@ -123,26 +124,28 @@ func wolfram(channel, query string, conn *irc.Conn) {
 	xml.Unmarshal(respbody, &wolfstruct)
 	log.Println(wolfstruct)
 	if wolfstruct.Success {
-		for _, thing := range wolfstruct.Pods {
-			if thing.Primary {
+		for _, pod := range wolfstruct.Pods {
+			if pod.Primary {
 				log.Println(query)
-				queryslice := []byte(query + ": " + thing.Title + " " + thing.Text)
+				queryslice := []byte(query + ": " + pod.Title + " " + pod.Text)
 				if len(queryslice) > 506 {
 					query = string(queryslice[:507]) + "..."
 				} else {
 					query = string(queryslice)
 				}
 				conn.Privmsg(channel, removeChars(query, WHITESPACE))
+				// Sometimes it returns multiple primary pods
 				return
 			}
 		}
 	}
+	// If I couldn't find anything just give up...
 	conn.Privmsg(channel, "I have no idea.")
 }
 
 func removeChars(bigstring, removeset string) string {
-	for _, asdf := range removeset {
-		bigstring = strings.Replace(bigstring, string(asdf), " ", -1)
+	for _, character := range removeset {
+		bigstring = strings.Replace(bigstring, string(character), " ", -1)
 	}
 	return bigstring
 }
