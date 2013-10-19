@@ -220,32 +220,40 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	urllist := []string{}
 	numlinks := 0
 
-	splitmessage := strings.Split(line.Args[1], " ")
+	// This is so that the bot can properly respond to pm's
+	var channel string
+	if conn.Me.Nick == line.Args[0] {
+		channel = line.Nick
+	} else {
+		channel = line.Args[0]
+	}
+	message := line.Args[1]
+	splitmessage := strings.Split(message, " ")
 
 	// Special commands
 	switch strings.TrimSpace(splitmessage[0]) {
 	case "!dance":
 		if line.Nick == "sadbox" {
-			go dance(line.Args[0], conn)
+			go dance(channel, conn)
 		}
 	case "!audio":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(line.Args[0], "https://sadbox.org/static/audiophile.html")
+			conn.Privmsg(channel, "https://sadbox.org/static/audiophile.html")
 		}
 	case "!cst":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(line.Args[0], "\u000313,8#CSTMASTERRACE")
+			conn.Privmsg(channel, "\u000313,8#CSTMASTERRACE")
 		}
 	case "!haata":
-		go haata(line.Args[0], conn)
+		go haata(channel, conn)
 	case "!search":
-		go googSearch(line.Args[0], line.Args[1], conn)
+		go googSearch(channel, message, conn)
 	}
 
 	// Commands that are read in from the config file
 	for _, command := range config.Commands {
 		if strings.TrimSpace(splitmessage[0]) == command.Name {
-			conn.Privmsg(line.Args[0], command.Text)
+			conn.Privmsg(channel, command.Text)
 		}
 	}
 
@@ -263,7 +271,7 @@ NextWord:
 				break
 			}
 			urllist = append(urllist, word)
-			go sendUrl(line.Args[0], word, conn)
+			go sendUrl(channel, word, conn)
 		}
 	}
 
@@ -274,7 +282,7 @@ NextWord:
 	defer db.Close()
 	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
 		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
-		line.Host, line.Src, line.Cmd, line.Args[0], line.Args[1], line.Time)
+		line.Host, line.Src, line.Cmd, channel, message, line.Time)
 	if err != nil {
 		log.Println(err)
 	}
