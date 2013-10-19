@@ -37,17 +37,19 @@ var (
 const (
 	flickrApiUrl = "http://api.flickr.com/services/rest/"
 	PUNCTUATION  = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
+	WHITESPACE   = "\t\n\u000b\u000c\r"
 )
 
 type Config struct {
-	Channel      string
-	DBConn       string
-	Nick         string
-	Ident        string
-	FullName     string
-	FlickrAPIKey string
-	IRCPass      string
-	Commands     []Command `xml:">Command"`
+	Channel       string
+	DBConn        string
+	Nick          string
+	Ident         string
+	FullName      string
+	FlickrAPIKey  string
+	WolframAPIKey string
+	IRCPass       string
+	Commands      []Command `xml:">Command"`
 }
 
 type Command struct {
@@ -79,12 +81,78 @@ type Photo struct {
 	Isprimary string `xml:"isprimary,attr"`
 }
 
+// Wolfram|Alpha structs
+type Wolfstruct struct {
+	Success bool  `xml:"success,attr"`
+	Pods    []Pod `xml:"pod"`
+}
+
+type Pod struct {
+	Title   string `xml:"title,attr"`
+	Text    string `xml:"subpod>plaintext"`
+	Primary bool   `xml:"primary,attr"`
+}
+
+func wolfram(channel, query string, conn *irc.Conn) {
+	query = strings.TrimSpace(query[4:])
+	if strings.TrimSpace(query) == "" {
+		conn.Privmsg(channel, "Example: !ask pi")
+		return
+	}
+	log.Printf("Searching wolfram alpha for %s", query)
+	wolf, err := url.Parse(`http://api.wolframalpha.com/v2/query`)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	v := wolf.Query()
+	v.Set("input", query)
+	v.Set("appid", config.WolframAPIKey)
+	wolf.RawQuery = v.Encode()
+	resp, err := http.Get(wolf.String())
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	respbody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var wolfstruct Wolfstruct
+	xml.Unmarshal(respbody, &wolfstruct)
+	log.Println(wolfstruct)
+	if wolfstruct.Success {
+		for _, thing := range wolfstruct.Pods {
+			if thing.Primary {
+				log.Println(query)
+				queryslice := []byte(query + ": " + thing.Title + " " + thing.Text)
+				if len(queryslice) > 506 {
+					query = string(queryslice[:507]) + "..."
+				} else {
+					query = string(queryslice)
+				}
+				conn.Privmsg(channel, removeChars(query, WHITESPACE))
+				return
+			}
+		}
+	}
+	conn.Privmsg(channel, "I have no idea.")
+}
+
+func removeChars(bigstring, removeset string) string {
+	for _, asdf := range removeset {
+		bigstring = strings.Replace(bigstring, string(asdf), " ", -1)
+	}
+	return bigstring
+}
+
 func cleanspaces(message string) []string {
 	splitmessage := strings.Split(message, " ")
 	var newslice []string
 	for _, word := range splitmessage {
 		if strings.TrimSpace(word) != "" {
-			newslice = append(newslice, strings.Trim(strings.TrimSpace(word), PUNCTUATION))
+			newslice = append(newslice, removeChars(strings.TrimSpace(word), PUNCTUATION))
 		}
 	}
 	return newslice
@@ -333,6 +401,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go googSearch(channel, message, conn)
 	case "!chatter":
 		go markov(channel, conn)
+	case "!ask":
+		go wolfram(channel, message, conn)
 	}
 
 	// Commands that are read in from the config file
