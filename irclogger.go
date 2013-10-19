@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -30,6 +31,7 @@ var (
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
 	markovkeys              []string
 	markovmap               = make(map[string][]string)
+	markovMutex             sync.RWMutex
 )
 
 const (
@@ -90,6 +92,7 @@ func cleanspaces(message string) []string {
 
 // Command!
 func markov(channel string, conn *irc.Conn) {
+	markovMutex.RLock()
 	var markovchain string
 	messageLength := random(50) + 10
 	for i := 0; i < messageLength; i++ {
@@ -112,23 +115,24 @@ func markov(channel string, conn *irc.Conn) {
 		markovchain = markovchain + " " + markovmap[searchfor][randnext]
 	}
 	conn.Privmsg(channel, markovchain+".")
+	markovMutex.RUnlock()
 }
 
 // Build the whole markov chain.. this sits in memory, so adjust the limit and junk
-func makeMarkov() error {
+func makeMarkov() {
 	db, err := sql.Open("mysql", "irclogger:irclogger@/irclogs")
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	defer db.Close()
 	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 30000`)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	for rows.Next() {
 		var message string
 		if err := rows.Scan(&message); err != nil {
-			return err
+			log.Fatal(err)
 		}
 		message = strings.ToLower(message)
 		newslice := cleanspaces(message)
@@ -142,12 +146,12 @@ func makeMarkov() error {
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return err
+		log.Fatal(err)
 	}
 	for key, _ := range markovmap {
 		markovkeys = append(markovkeys, key)
 	}
-	return nil
+	markovMutex.Unlock()
 }
 
 // Just grab the page, don't care much about errors
@@ -399,10 +403,8 @@ func init() {
 	}
 
 	log.Println("Loading markov data.")
-	err = makeMarkov()
-	if err != nil {
-		log.Panic(err)
-	}
+	markovMutex.Lock()
+	go makeMarkov()
 }
 
 func main() {
