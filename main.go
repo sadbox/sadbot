@@ -6,20 +6,16 @@ import (
 	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/tv42/base58"
 	"html"
 	"io"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
-	"unicode"
 )
 
 var (
@@ -29,14 +25,6 @@ var (
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
-    markovData Markov
-)
-
-const (
-	flickrApiUrl  = "http://api.flickr.com/services/rest/"
-	wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
-	PUNCTUATION   = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
-	WHITESPACE    = "\t\n\u000b\u000c\r"
 )
 
 type Config struct {
@@ -56,102 +44,7 @@ type Command struct {
 	Text string
 }
 
-type Markov struct {
-    mutex sync.RWMutex
-    keys []string
-    bigmap map[string][]string
-}
-
-func (m *Markov) Init() {
-    m.bigmap = make(map[string][]string)
-}
-
-
-// The following four structs are all for the flickr api
-type Setresp struct {
-	Sets []Set `xml:"collections>collection>set"`
-}
-
-type Set struct {
-	Id          string `xml:"id,attr"`
-	Title       string `xml:"title,attr"`
-	Description string `xml:"description,attr"`
-}
-
-type Photoresp struct {
-	Photos []Photo `xml:"photoset>photo"`
-}
-
-type Photo struct {
-	Id        int64  `xml:"id,attr"`
-	Secret    string `xml:"secret,attr"`
-	Server    string `xml:"server,attr"`
-	Farm      string `xml:"farm,attr"`
-	Title     string `xml:"title,attr"`
-	Isprimary string `xml:"isprimary,attr"`
-}
-
-// Wolfram|Alpha structs
-type Wolfstruct struct {
-	Success bool  `xml:"success,attr"`
-	Pods    []Pod `xml:"pod"`
-}
-
-type Pod struct {
-	Title   string `xml:"title,attr"`
-	Text    string `xml:"subpod>plaintext"`
-	Primary bool   `xml:"primary,attr"`
-}
-
-func wolfram(channel, query string, conn *irc.Conn) {
-	query = strings.TrimSpace(query[4:])
-	if strings.TrimSpace(query) == "" {
-		conn.Privmsg(channel, "Example: !ask pi")
-		return
-	}
-	log.Printf("Searching wolfram alpha for %s", query)
-	wolf, err := url.Parse(wolframAPIUrl)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	v := wolf.Query()
-	v.Set("input", query)
-	v.Set("appid", config.WolframAPIKey)
-	wolf.RawQuery = v.Encode()
-	resp, err := http.Get(wolf.String())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	respbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	var wolfstruct Wolfstruct
-	xml.Unmarshal(respbody, &wolfstruct)
-	log.Println(wolfstruct)
-	if wolfstruct.Success {
-		for _, pod := range wolfstruct.Pods {
-			if pod.Primary {
-				log.Println(query)
-				queryslice := []byte(query + ": " + pod.Title + " " + pod.Text)
-				if len(queryslice) > 506 {
-					query = string(queryslice[:507]) + "..."
-				} else {
-					query = string(queryslice)
-				}
-				conn.Privmsg(channel, removeChars(query, WHITESPACE))
-				// Sometimes it returns multiple primary pods
-				return
-			}
-		}
-	}
-	// If I couldn't find anything just give up...
-	conn.Privmsg(channel, "I have no idea.")
-}
-
+// Used in markov and wolfram
 func removeChars(bigstring, removeset string) string {
 	for _, character := range removeset {
 		bigstring = strings.Replace(bigstring, string(character), "", -1)
@@ -159,82 +52,8 @@ func removeChars(bigstring, removeset string) string {
 	return bigstring
 }
 
-func cleanspaces(message string) []string {
-	splitmessage := strings.Split(message, " ")
-	var newslice []string
-	for _, word := range splitmessage {
-		if strings.TrimSpace(word) != "" {
-			newslice = append(newslice, removeChars(strings.TrimSpace(word), PUNCTUATION))
-		}
-	}
-	return newslice
-}
-
-// Command!
-func markov(channel string, conn *irc.Conn) {
-	markovData.mutex.RLock()
-	var markovchain string
-	messageLength := random(50) + 10
-	for i := 0; i < messageLength; i++ {
-		splitchain := strings.Split(markovchain, " ")
-		if len(splitchain) < 2 {
-			s := []rune(markovData.keys[random(len(markovData.keys))])
-			s[0] = unicode.ToUpper(s[0])
-			markovchain = string(s)
-			continue
-		}
-		chainlength := len(splitchain)
-		searchfor := strings.ToLower(splitchain[chainlength-2] + " " + splitchain[chainlength-1])
-		if len(markovData.bigmap[searchfor]) == 0 || strings.LastIndex(markovchain, ".") < len(markovchain)-50 {
-			s := []rune(markovData.keys[random(len(markovData.keys))])
-			s[0] = unicode.ToUpper(s[0])
-			markovchain = markovchain + ". " + string(s)
-			continue
-		}
-		randnext := random(len(markovData.bigmap[searchfor]))
-		markovchain = markovchain + " " + markovData.bigmap[searchfor][randnext]
-	}
-	conn.Privmsg(channel, markovchain+".")
-	markovData.mutex.RUnlock()
-}
-
-// Build the whole markov chain.. this sits in memory, so adjust the limit and junk
-func makeMarkov() {
-	db, err := sql.Open("mysql", config.DBConn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 30000`)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		var message string
-		if err := rows.Scan(&message); err != nil {
-			log.Fatal(err)
-		}
-		message = strings.ToLower(message)
-		newslice := cleanspaces(message)
-		splitlength := len(newslice)
-		for position, word := range newslice {
-			if splitlength-2 <= position {
-				break
-			}
-			wordkey := word + " " + newslice[position+1]
-			markovData.bigmap[wordkey] = append(markovData.bigmap[wordkey], newslice[position+2])
-		}
-	}
-	if err := rows.Err(); err != nil {
-		log.Fatal(err)
-	}
-	for key, _ := range markovData.bigmap {
-		markovData.keys = append(markovData.keys, key)
-	}
-	markovData.mutex.Unlock()
-}
-
 // Just grab the page, don't care much about errors
+// Used in flickr and wolfram
 func htmlfetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -301,88 +120,45 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	}
 }
 
-// http://bash.org/?4281
-func dance(channel string, conn *irc.Conn) {
-	conn.Privmsg(channel, "\u0001ACTION dances :D-<")
-	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, "\u0001ACTION dances :D|<")
-	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, "\u0001ACTION dances :D/<")
+func logMessage(line *irc.Line, channel, message string) {
+	db, err := sql.Open("mysql", config.DBConn)
+	if err != nil {
+		log.Println(err)
+	}
+	defer db.Close()
+	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
+		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
+		line.Host, line.Src, line.Cmd, channel, message, line.Time)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
-// Fetch a random picture from one of Haata's keyboard sets
-func haata(channel string, conn *irc.Conn) {
-	flickrUrl, err := url.Parse(flickrApiUrl)
-	if err != nil {
-		log.Println(err)
-		return
+func checkForUrl(channel string, splitmessage []string, conn *irc.Conn) {
+	urllist := []string{}
+	numlinks := 0
+NextWord:
+	for _, word := range splitmessage {
+		word = strings.TrimSpace(word)
+		if urlRegex.MatchString(word) {
+			for _, subUrl := range urllist {
+				if subUrl == word {
+					continue NextWord
+				}
+			}
+			numlinks++
+			if numlinks > 3 {
+				break
+			}
+			urllist = append(urllist, word)
+			go sendUrl(channel, word, conn)
+		}
 	}
-	v := flickrUrl.Query()
-	v.Set("method", "flickr.collections.getTree")
-	v.Set("api_key", config.FlickrAPIKey)
-	// triplehaata's user_id
-	v.Set("user_id", "57321699@N06")
-	// Only the keyboard pics
-	v.Set("collection_id", "57276377-72157635417889224")
-	flickrUrl.RawQuery = v.Encode()
-
-	sets, err := htmlfetch(flickrUrl.String())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	var setresp Setresp
-	xml.Unmarshal(sets, &setresp)
-	randsetindex := random(len(setresp.Sets))
-	randset := setresp.Sets[randsetindex].Id
-
-	flickrUrl, err = url.Parse(flickrApiUrl)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	v = flickrUrl.Query()
-	v.Set("method", "flickr.photosets.getPhotos")
-	v.Set("api_key", config.FlickrAPIKey)
-	v.Set("photoset_id", randset)
-	flickrUrl.RawQuery = v.Encode()
-
-	pics, err := htmlfetch(flickrUrl.String())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	var photoresp Photoresp
-	xml.Unmarshal(pics, &photoresp)
-	randpic := random(len(photoresp.Photos))
-	// flickr's short url's are encoded using base58... this seems messy
-	// Maybe use the proper long url?
-	photostring := string(base58.EncodeBig([]byte{}, big.NewInt(photoresp.Photos[randpic].Id)))
-	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
-}
-
-func googSearch(channel, query string, conn *irc.Conn) {
-	query = strings.TrimSpace(query[7:])
-	if query == "" {
-		conn.Privmsg(channel, "Example: !search stuff and junk")
-		return
-	}
-	searchUrl, err := url.Parse("https://google.com/search")
-	if err != nil {
-		panic(err)
-	}
-	v := searchUrl.Query()
-	v.Set("q", query)
-	searchUrl.RawQuery = v.Encode()
-	conn.Privmsg(channel, searchUrl.String())
 }
 
 // This function does all the dispatching for various commands
 // as well as logging each message to the database
 func handleMessage(conn *irc.Conn, line *irc.Line) {
-	urllist := []string{}
-	numlinks := 0
-
 	// This is so that the bot can properly respond to pm's
 	var channel string
 	if conn.Me.Nick == line.Args[0] {
@@ -424,35 +200,11 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		}
 	}
 
-NextWord:
-	for _, word := range splitmessage {
-		word = strings.TrimSpace(word)
-		if urlRegex.MatchString(word) {
-			for _, subUrl := range urllist {
-				if subUrl == word {
-					continue NextWord
-				}
-			}
-			numlinks++
-			if numlinks > 3 {
-				break
-			}
-			urllist = append(urllist, word)
-			go sendUrl(channel, word, conn)
-		}
-	}
+	// This is what looks at each word and tries to figure out if it's a URL
+	go checkForUrl(channel, splitmessage, conn)
 
-	db, err := sql.Open("mysql", config.DBConn)
-	if err != nil {
-		log.Println(err)
-	}
-	defer db.Close()
-	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
-		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
-		line.Host, line.Src, line.Cmd, channel, message, line.Time)
-	if err != nil {
-		log.Println(err)
-	}
+	// Shove that shit in the database!
+	go logMessage(line, channel, message)
 }
 
 func init() {
@@ -483,11 +235,6 @@ func init() {
 	for index, command := range config.Commands {
 		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
 	}
-
-	log.Println("Loading markov data.")
-    markovData.Init()
-	markovData.mutex.Lock()
-	go makeMarkov()
 }
 
 func main() {
