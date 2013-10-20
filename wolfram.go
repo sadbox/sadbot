@@ -59,7 +59,14 @@ func wolfram(channel, query string, conn *irc.Conn) {
 				} else {
 					query = string(queryslice)
 				}
-				for _, message := range strings.Split(query, "\n")[:3] {
+				splitmessage := strings.Split(query, "\n")
+				var numlines int
+				if len(splitmessage) > 3 {
+					numlines = 3
+				} else {
+					numlines = len(splitmessage)
+				}
+				for _, message := range splitmessage[:numlines] {
 					conn.Privmsg(channel, message)
 				}
 				// Sometimes it returns multiple primary pods
