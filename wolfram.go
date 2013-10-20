@@ -59,7 +59,9 @@ func wolfram(channel, query string, conn *irc.Conn) {
 				} else {
 					query = string(queryslice)
 				}
-				conn.Privmsg(channel, removeChars(query, WHITESPACE))
+				for _, message := range strings.Split(query, "\n")[:3] {
+					conn.Privmsg(channel, message)
+				}
 				// Sometimes it returns multiple primary pods
 				return
 			}

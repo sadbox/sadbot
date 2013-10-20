@@ -44,14 +44,6 @@ type Command struct {
 	Text string
 }
 
-// Used in markov and wolfram
-func removeChars(bigstring, removeset string) string {
-	for _, character := range removeset {
-		bigstring = strings.Replace(bigstring, string(character), "", -1)
-	}
-	return bigstring
-}
-
 // Just grab the page, don't care much about errors
 // Used in flickr and wolfram
 func htmlfetch(url string) ([]byte, error) {

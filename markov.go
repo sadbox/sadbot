@@ -38,6 +38,13 @@ func cleanspaces(message string) []string {
 	return newslice
 }
 
+func removeChars(bigstring, removeset string) string {
+	for _, character := range removeset {
+		bigstring = strings.Replace(bigstring, string(character), "", -1)
+	}
+	return bigstring
+}
+
 // This is what generates the actual markov chain
 func markov(channel string, conn *irc.Conn) {
 	markovData.mutex.RLock()
