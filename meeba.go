@@ -14,13 +14,15 @@ type meebCast struct {
 
 func meeba(channel, nick, command string, conn *irc.Conn) {
     if nick == "meeba" || nick == "sadbox" {
-        meebcast.mutex.Lock()
         if command == "on" {
+            meebcast.mutex.Lock()
             meebcast.status = true
+            meebcast.mutex.Unlock()
         } else if command == "off" {
+            meebcast.mutex.Lock()
             meebcast.status = false
+            meebcast.mutex.Unlock()
         }
-        meebcast.mutex.Unlock()
     }
     meebcast.mutex.RLock()
     defer meebcast.mutex.RUnlock()
