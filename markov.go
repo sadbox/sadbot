@@ -11,9 +11,7 @@ import (
 	"log"
 )
 
-var (
-	markovData Markov
-)
+var markovData Markov
 
 const PUNCTUATION = `!"#$%&\'()*+,-./:;<=>?@[\\]^_{|}~` + "`"
 
