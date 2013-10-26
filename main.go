@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/xml"
+	"errors"
 	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
@@ -16,7 +17,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-    "errors"
 )
 
 var (
@@ -52,9 +52,9 @@ func htmlfetch(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-    if resp.StatusCode == 404 {
-        return nil, errors.New("404 from link")
-    }
+	if resp.StatusCode == 404 {
+		return nil, errors.New("404 from link")
+	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -80,10 +80,10 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		return
 	}
 	defer resp.Body.Close()
-    if resp.StatusCode == 404 {
-        log.Println("404 from link")
-        return
-    }
+	if resp.StatusCode == 404 {
+		log.Println("404 from link")
+		return
+	}
 	// This is necessary because if you do an ioutil.ReadAll() it will
 	// block until the entire thing is read... which could be painful
 	buf := make([]byte, 1024)
@@ -191,14 +191,14 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go markov(channel, conn)
 	case "!ask":
 		go wolfram(channel, message, conn)
-    case "!meebcast":
-        var command string
-        if len(splitmessage) < 2 {
-            command = ""
-        } else {
-            command = strings.TrimSpace(splitmessage[1])
-        }
-        go meeba(channel, line.Nick, command, conn)
+	case "!meebcast":
+		var command string
+		if len(splitmessage) < 2 {
+			command = ""
+		} else {
+			command = strings.TrimSpace(splitmessage[1])
+		}
+		go meeba(channel, line.Nick, command, conn)
 	}
 
 	// Commands that are read in from the config file
