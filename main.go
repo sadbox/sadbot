@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+    "errors"
 )
 
 var (
@@ -51,6 +52,9 @@ func htmlfetch(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+    if resp.StatusCode == 404 {
+        return nil, errors.New("404 from link")
+    }
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -76,6 +80,10 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		return
 	}
 	defer resp.Body.Close()
+    if resp.StatusCode == 404 {
+        log.Println("404 from link")
+        return
+    }
 	// This is necessary because if you do an ioutil.ReadAll() it will
 	// block until the entire thing is read... which could be painful
 	buf := make([]byte, 1024)
