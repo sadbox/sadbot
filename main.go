@@ -183,6 +183,14 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go markov(channel, conn)
 	case "!ask":
 		go wolfram(channel, message, conn)
+    case "!meebcast":
+        var command string
+        if len(splitmessage) < 2 {
+            command = ""
+        } else {
+            command = strings.TrimSpace(splitmessage[1])
+        }
+        go meeba(channel, line.Nick, command, conn)
 	}
 
 	// Commands that are read in from the config file
