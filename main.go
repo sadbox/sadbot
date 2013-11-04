@@ -188,7 +188,9 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	case "!search":
 		go googSearch(channel, message, conn)
 	case "!chatter":
-		go markov(channel, conn)
+		if line.Nick == "sadbox" {
+			go markov(channel, conn)
+		}
 	case "!ask":
 		go wolfram(channel, message, conn)
 	case "!meebcast":
