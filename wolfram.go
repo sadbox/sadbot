@@ -8,10 +8,8 @@ import (
 	"strings"
 )
 
-const (
-	wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
-	WHITESPACE    = "\t\n\u000b\u000c\r"
-)
+const wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
+
 
 // Wolfram|Alpha structs
 type Wolfstruct struct {

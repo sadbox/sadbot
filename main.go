@@ -52,8 +52,8 @@ func htmlfetch(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == 404 {
-		return nil, errors.New("404 from link")
+	if resp.StatusCode >= 400 {
+		return nil, errors.New("http server return error")
 	}
 	respbody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -80,8 +80,8 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		return
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == 404 {
-		log.Println("404 from link")
+	if resp.StatusCode >= 400 {
+		log.Println("http server return error.")
 		return
 	}
 	// This is necessary because if you do an ioutil.ReadAll() it will
