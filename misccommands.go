@@ -28,6 +28,7 @@ func googSearch(channel, query string, conn *irc.Conn) {
 	}
 	v := searchUrl.Query()
 	v.Set("q", query)
+	v.Set("btnI", "1")
 	searchUrl.RawQuery = v.Encode()
 	conn.Privmsg(channel, searchUrl.String())
 }
