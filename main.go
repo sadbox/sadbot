@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	config             Config
-	urlRegex, regexErr = regexp.Compile(`(?i)\b((?:https?://|www\d{0,3}[.]|[` +
+	config   Config
+	urlRegex = regexp.MustCompile(`(?i)\b((?:https?://|www\d{0,3}[.]|[` +
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex, httpRegexErr = regexp.Compile(`http(s)?://.*`)
+	httpRegex = regexp.MustCompile(`http(s)?://.*`)
 )
 
 type Config struct {
@@ -221,13 +221,6 @@ func init() {
 	log.Println("Starting sadbot")
 
 	flag.Parse()
-
-	if regexErr != nil {
-		log.Panic(regexErr)
-	}
-	if httpRegexErr != nil {
-		log.Panic(httpRegexErr)
-	}
 
 	xmlFile, err := ioutil.ReadFile("config.xml")
 	if err != nil {
