@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"encoding/xml"
+	"encoding/json"
 	"errors"
 	"flag"
 	irc "github.com/fluffle/goirc/client"
@@ -13,6 +13,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+    "os"
 	"net/url"
 	"regexp"
 	"strings"
@@ -29,20 +30,18 @@ var (
 )
 
 type Config struct {
-	Channel       string
-	DBConn        string
-	Nick          string
-	Ident         string
-	FullName      string
-	FlickrAPIKey  string
-	WolframAPIKey string
-	IRCPass       string
-	Commands      []Command `xml:">Command"`
-}
-
-type Command struct {
-	Name string
-	Text string
+    Channel       string
+    DBConn        string
+    Nick          string
+    Ident         string
+    FullName      string
+    FlickrAPIKey  string
+    WolframAPIKey string
+    IRCPass       string
+    Commands      []struct {
+        Name string
+        Text string
+    }
 }
 
 // Just grab the page, don't care much about errors
@@ -222,11 +221,15 @@ func init() {
 
 	flag.Parse()
 
-	xmlFile, err := ioutil.ReadFile("config.xml")
+    configfile, err := os.Open("config.json")
+    if err != nil {
+		log.Fatal(err)
+    }
+    decoder := json.NewDecoder(configfile)
+    err = decoder.Decode(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	xml.Unmarshal(xmlFile, &config)
 
 	log.Println("Loaded config file!")
 	log.Printf("Joining channel %s", config.Channel)
