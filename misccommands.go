@@ -9,11 +9,11 @@ import (
 
 // http://bash.org/?4281
 func dance(channel string, conn *irc.Conn) {
-	conn.Privmsg(channel, "\u0001ACTION dances :D-<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D-<\u0001")
 	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, "\u0001ACTION dances :D|<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D|<\u0001")
 	time.Sleep(500 * time.Millisecond)
-	conn.Privmsg(channel, "\u0001ACTION dances :D/<")
+	conn.Privmsg(channel, "\u0001ACTION dances :D/<\u0001")
 }
 
 func googSearch(channel, query string, conn *irc.Conn) {
