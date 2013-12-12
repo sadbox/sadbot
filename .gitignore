@@ -24,3 +24,4 @@ _testmain.go
 sadbot
 config.xml
 deploy.sh
+config.json
