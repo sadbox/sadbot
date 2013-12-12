@@ -177,7 +177,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		}
 	case "!audio":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(channel, "https://sadbox.org/static/audiophile.html")
+			conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
 		}
 	case "!cst":
 		if line.Nick == "sadbox" {
