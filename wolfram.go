@@ -10,7 +10,6 @@ import (
 
 const wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
 
-
 // Wolfram|Alpha structs
 type Wolfstruct struct {
 	Success bool  `xml:"success,attr"`

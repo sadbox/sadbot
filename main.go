@@ -13,11 +13,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-    "os"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 var (
@@ -30,18 +31,18 @@ var (
 )
 
 type Config struct {
-    Channel       string
-    DBConn        string
-    Nick          string
-    Ident         string
-    FullName      string
-    FlickrAPIKey  string
-    WolframAPIKey string
-    IRCPass       string
-    Commands      []struct {
-        Name string
-        Text string
-    }
+	Channel       string
+	DBConn        string
+	Nick          string
+	Ident         string
+	FullName      string
+	FlickrAPIKey  string
+	WolframAPIKey string
+	IRCPass       string
+	Commands      []struct {
+		Name string
+		Text string
+	}
 }
 
 // Just grab the page, don't care much about errors
@@ -104,7 +105,7 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	if titlestart != -1 && titlestart != -1 {
 		title := string(respbody[titlestart+7 : titleend])
 		title = strings.TrimSpace(title)
-		if title != "" {
+		if title != "" && utf8.ValidString(title) {
 			parsedurl, err := url.Parse(postedUrl)
 			if err == nil {
 				// This should only be the google.com in google.com/search&q=blah
@@ -221,12 +222,12 @@ func init() {
 
 	flag.Parse()
 
-    configfile, err := os.Open("config.json")
-    if err != nil {
+	configfile, err := os.Open("config.json")
+	if err != nil {
 		log.Fatal(err)
-    }
-    decoder := json.NewDecoder(configfile)
-    err = decoder.Decode(&config)
+	}
+	decoder := json.NewDecoder(configfile)
+	err = decoder.Decode(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
