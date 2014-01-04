@@ -261,6 +261,7 @@ func main() {
 		func(conn *irc.Conn, line *irc.Line) { quit <- true })
 
 	c.AddHandler("PRIVMSG", handleMessage)
+	c.AddHandler("ACTION", handleMessage)
 
 	if err := c.Connect("irc.freenode.net", config.Nick+":"+config.IRCPass); err != nil {
 		log.Fatalln("Connection error: %s\n", err)
