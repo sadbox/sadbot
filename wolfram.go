@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"fmt"
 	irc "github.com/fluffle/goirc/client"
 	"log"
 	"net/url"
@@ -22,7 +23,7 @@ type Pod struct {
 	Primary bool   `xml:"primary,attr"`
 }
 
-func wolfram(channel, query string, conn *irc.Conn) {
+func wolfram(channel, query, nick string, conn *irc.Conn) {
 	query = strings.TrimSpace(query[4:])
 	if strings.TrimSpace(query) == "" {
 		conn.Privmsg(channel, "Example: !ask pi")
@@ -50,21 +51,21 @@ func wolfram(channel, query string, conn *irc.Conn) {
 		for _, pod := range wolfstruct.Pods {
 			if pod.Primary {
 				log.Println(query)
-				queryslice := []byte(query + ": " + pod.Title + " " + pod.Text)
-				if len(queryslice) > 506 {
-					query = string(queryslice[:507]) + "..."
-				} else {
-					query = string(queryslice)
-				}
-				splitmessage := strings.Split(query, "\n")
+				response := strings.Split(pod.Title+": "+pod.Text, "\n")
 				var numlines int
-				if len(splitmessage) > 3 {
+				if len(response) > 3 {
 					numlines = 3
 				} else {
-					numlines = len(splitmessage)
+					numlines = len(response)
 				}
-				for _, message := range splitmessage[:numlines] {
-					conn.Privmsg(channel, message)
+				query = fmt.Sprintf("(In reponse to: <%s> %s)", nick, query)
+				if numlines == 1 {
+					conn.Privmsg(channel, response[0]+" "+query)
+				} else {
+					for _, message := range response[:numlines] {
+						conn.Privmsg(channel, message)
+					}
+					conn.Privmsg(channel, query)
 				}
 				// Sometimes it returns multiple primary pods
 				return

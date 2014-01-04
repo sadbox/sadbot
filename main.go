@@ -192,7 +192,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 			go markov(channel, conn)
 		}
 	case "!ask":
-		go wolfram(channel, message, conn)
+		go wolfram(channel, message, line.Nick, conn)
 	case "!meebcast":
 		var command string
 		if len(splitmessage) < 2 {
