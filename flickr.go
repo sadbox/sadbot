@@ -6,6 +6,7 @@ import (
 	"github.com/tv42/base58"
 	"log"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,7 +65,7 @@ func haata(channel string, conn *irc.Conn) {
 		log.Println(err)
 		return
 	}
-	randsetindex := random(len(setresp.Sets))
+	randsetindex := rand.Intn(len(setresp.Sets))
 	randset := setresp.Sets[randsetindex].Id
 
 	flickrUrl, err = url.Parse(flickrApiUrl)
@@ -90,7 +91,7 @@ func haata(channel string, conn *irc.Conn) {
 		log.Println(err)
 		return
 	}
-	randpic := random(len(photoresp.Photos))
+	randpic := rand.Intn(len(photoresp.Photos))
 	// flickr's short url's are encoded using base58... this seems messy
 	// Maybe use the proper long url?
 	photostring := string(base58.EncodeBig([]byte{}, big.NewInt(photoresp.Photos[randpic].Id)))

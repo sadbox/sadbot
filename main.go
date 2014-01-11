@@ -43,11 +43,6 @@ type Config struct {
 	}
 }
 
-func random(limit int) int {
-	rand.Seed(time.Now().UTC().UnixNano())
-	return rand.Intn(limit)
-}
-
 // Try and grab the title for any URL's posted in the channel
 func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 	log.Println("Fetching title for " + postedUrl + " In channel " + channel)
@@ -223,6 +218,10 @@ func init() {
 	for index, command := range config.Commands {
 		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
 	}
+}
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func main() {

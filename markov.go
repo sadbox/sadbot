@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
+	"math/rand"
 	"strings"
 	"sync"
 	"unicode"
@@ -47,11 +48,11 @@ func removeChars(bigstring, removeset string) string {
 func markov(channel string, conn *irc.Conn) {
 	markovData.mutex.RLock()
 	var markovchain string
-	messageLength := random(50) + 10
+	messageLength := rand.Intn(50) + 10
 	for i := 0; i < messageLength; i++ {
 		splitchain := strings.Split(markovchain, " ")
 		if len(splitchain) < 2 {
-			s := []rune(markovData.keys[random(len(markovData.keys))])
+			s := []rune(markovData.keys[rand.Intn(len(markovData.keys))])
 			s[0] = unicode.ToUpper(s[0])
 			markovchain = string(s)
 			continue
@@ -59,12 +60,12 @@ func markov(channel string, conn *irc.Conn) {
 		chainlength := len(splitchain)
 		searchfor := strings.ToLower(splitchain[chainlength-2] + " " + splitchain[chainlength-1])
 		if len(markovData.bigmap[searchfor]) == 0 || strings.LastIndex(markovchain, ".") < len(markovchain)-50 {
-			s := []rune(markovData.keys[random(len(markovData.keys))])
+			s := []rune(markovData.keys[rand.Intn(len(markovData.keys))])
 			s[0] = unicode.ToUpper(s[0])
 			markovchain = markovchain + ". " + string(s)
 			continue
 		}
-		randnext := random(len(markovData.bigmap[searchfor]))
+		randnext := rand.Intn(len(markovData.bigmap[searchfor]))
 		markovchain = markovchain + " " + markovData.bigmap[searchfor][randnext]
 	}
 	conn.Privmsg(channel, markovchain+".")
