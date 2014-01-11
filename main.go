@@ -26,7 +26,6 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex = regexp.MustCompile(`http(s)?://.*`)
 )
 
 type Config struct {
@@ -45,13 +44,15 @@ type Config struct {
 }
 
 // Try and grab the title for any URL's posted in the channel
-func sendUrl(channel, postedUrl string, conn *irc.Conn) {
-	log.Println("Fetching title for " + postedUrl + " In channel " + channel)
-	if !httpRegex.MatchString(postedUrl) {
-		postedUrl = "http://" + postedUrl
-	}
+func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
+    postedUrl, err := url.Parse(unparsedURL)
+    if err != nil {
+        log.Println(err)
+        return
+    }
+	log.Println("Fetching title for " + postedUrl.String() + " In channel " + channel)
 
-	resp, err := http.Get(postedUrl)
+	resp, err := http.Get(postedUrl.String())
 	if err != nil {
 		log.Println(err)
 		return
@@ -77,14 +78,9 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		title := string(respbody[titlestart+7 : titleend])
 		title = strings.TrimSpace(title)
 		if title != "" && utf8.ValidString(title) {
-			parsedurl, err := url.Parse(postedUrl)
-			if err == nil {
-				// This should only be the google.com in google.com/search&q=blah
-				postedUrl = parsedurl.Host
-			}
 			// Example:
 			// Title: sadbox . org (at sadbox.org)
-			title = "Title: " + html.UnescapeString(title) + " (at " + postedUrl + ")"
+			title = "Title: " + html.UnescapeString(title) + " (at " + postedUrl.Host + ")"
 			log.Println(title)
 			conn.Privmsg(channel, title)
 		}
