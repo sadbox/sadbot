@@ -8,6 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -60,21 +61,15 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		log.Println("http server return error.")
 		return
 	}
-	// This is necessary because if you do an ioutil.ReadAll() it will
-	// block until the entire thing is read... which could be painful
-	buf := make([]byte, 1024)
-	respbody := []byte{}
-	for i := 0; i < 30; i++ {
-		n, err := resp.Body.Read(buf)
-		if err != nil && err != io.EOF {
-			return
-		}
-		if n == 0 {
-			break
-		}
-		respbody = append(respbody, buf[:n]...)
+	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+		log.Println("content-type is not text/html")
+		return
 	}
-
+	respbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 4096))
+	if err != nil {
+		log.Println("error reading posted link")
+		return
+	}
 	stringbody := string(respbody)
 	titlestart := strings.Index(stringbody, "<title>")
 	titleend := strings.Index(stringbody, "</title>")
