@@ -1,0 +1,14 @@
+{
+    "Channel": "#sometestchannel",
+    "DBConn": "user:password@host/database",
+    "Nick": "some_irc_bot",
+    "Ident": "some_irc_bot",
+    "FullName": "Imma McBot",
+    "IRCPass": "IRC PASSWORD",
+    "FlickrAPIKey": "FLICKR API KEY",
+    "WolframAPIKey": "WOLFRAM API KEY",
+    "Commands" : [
+        { "Name": "!help", "Text": "Available commands are !help and !stuff" },
+        { "Name": "!stuff", "Text": "This command does nothing but print this!" }
+    ]
+}
