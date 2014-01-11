@@ -45,11 +45,11 @@ type Config struct {
 
 // Try and grab the title for any URL's posted in the channel
 func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
-    postedUrl, err := url.Parse(unparsedURL)
-    if err != nil {
-        log.Println(err)
-        return
-    }
+	postedUrl, err := url.Parse(unparsedURL)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	log.Println("Fetching title for " + postedUrl.String() + " In channel " + channel)
 
 	resp, err := http.Get(postedUrl.String())
@@ -62,16 +62,30 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 		log.Println("http server return error.")
 		return
 	}
+	respbody := []byte{}
+	if resp.Header.Get("Content-Type") == "" {
+		buf := make([]byte, 512)
+		bufsize, err := resp.Body.Read(buf)
+		if err != nil {
+			log.Println("adding content type failed")
+		}
+		resp.Header.Set("Content-Type", http.DetectContentType(buf[:bufsize]))
+		respbody = append(respbody, buf[:bufsize]...)
+	}
+
 	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
 		log.Println("content-type is not text/html")
 		return
 	}
-	respbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 50000))
+
+	restofbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 50000))
 	if err != nil {
 		log.Println("error reading posted link")
 		return
 	}
+	respbody = append(respbody, restofbody...)
 	stringbody := string(respbody)
+	log.Println(stringbody)
 	titlestart := strings.Index(stringbody, "<title>")
 	titleend := strings.Index(stringbody, "</title>")
 	if titlestart != -1 && titlestart != -1 {
