@@ -5,15 +5,13 @@
 package main
 
 import (
-	"database/sql"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"math/rand"
 	"strings"
 	"sync"
 	"unicode"
-
-	"log"
 )
 
 var markovData Markov
@@ -78,11 +76,6 @@ func markov(channel string, conn *irc.Conn) {
 
 // Build the whole markov chain.. this sits in memory, so adjust the limit and junk
 func makeMarkov() {
-	db, err := sql.Open("mysql", config.DBConn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
 	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 30000`)
 	if err != nil {
 		log.Fatal(err)
