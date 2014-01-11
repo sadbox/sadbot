@@ -89,7 +89,6 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 	}
 	respbody = append(respbody, restofbody...)
 	stringbody := string(respbody)
-	log.Println(stringbody)
 	titlestart := strings.Index(stringbody, "<title>")
 	titleend := strings.Index(stringbody, "</title>")
 	if titlestart != -1 && titlestart != -1 {
