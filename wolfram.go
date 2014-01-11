@@ -5,6 +5,7 @@ import (
 	"fmt"
 	irc "github.com/fluffle/goirc/client"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -39,13 +40,18 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 	v.Set("input", query)
 	v.Set("appid", config.WolframAPIKey)
 	wolf.RawQuery = v.Encode()
-	respbody, err := htmlfetch(wolf.String())
+	resp, err := http.Get(wolf.String())
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer resp.Body.Close()
 	var wolfstruct Wolfstruct
-	xml.Unmarshal(respbody, &wolfstruct)
+	err = xml.NewDecoder(resp.Body).Decode(&wolfstruct)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	log.Println(wolfstruct)
 	if wolfstruct.Success {
 		for _, pod := range wolfstruct.Pods {

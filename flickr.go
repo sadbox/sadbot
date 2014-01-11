@@ -6,6 +6,7 @@ import (
 	"github.com/tv42/base58"
 	"log"
 	"math/big"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -51,13 +52,18 @@ func haata(channel string, conn *irc.Conn) {
 	v.Set("collection_id", "57276377-72157635417889224")
 	flickrUrl.RawQuery = v.Encode()
 
-	sets, err := htmlfetch(flickrUrl.String())
+	sets, err := http.Get(flickrUrl.String())
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer sets.Body.Close()
 	var setresp Setresp
-	xml.Unmarshal(sets, &setresp)
+	err = xml.NewDecoder(sets.Body).Decode(&setresp)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	randsetindex := random(len(setresp.Sets))
 	randset := setresp.Sets[randsetindex].Id
 
@@ -72,13 +78,18 @@ func haata(channel string, conn *irc.Conn) {
 	v.Set("photoset_id", randset)
 	flickrUrl.RawQuery = v.Encode()
 
-	pics, err := htmlfetch(flickrUrl.String())
+	pics, err := http.Get(flickrUrl.String())
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer pics.Body.Close()
 	var photoresp Photoresp
-	xml.Unmarshal(pics, &photoresp)
+	err = xml.NewDecoder(pics.Body).Decode(&photoresp)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	randpic := random(len(photoresp.Photos))
 	// flickr's short url's are encoded using base58... this seems messy
 	// Maybe use the proper long url?

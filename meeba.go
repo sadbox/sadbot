@@ -3,13 +3,15 @@ package main
 import (
 	irc "github.com/fluffle/goirc/client"
 	"sync"
+	"time"
 )
 
 var meebcast = meebCast{status: false}
 
 type meebCast struct {
-	status bool
-	mutex  sync.RWMutex
+	mutex   sync.RWMutex
+	turnOff *time.Timer
+	status  bool
 }
 
 func meeba(channel, nick, command string, conn *irc.Conn) {
@@ -17,10 +19,20 @@ func meeba(channel, nick, command string, conn *irc.Conn) {
 		if command == "on" {
 			meebcast.mutex.Lock()
 			meebcast.status = true
+
+			meebcast.turnOff = time.AfterFunc(3*time.Hour, func() {
+				meebcast.mutex.Lock()
+				meebcast.status = false
+				meebcast.mutex.Unlock()
+			})
+
 			meebcast.mutex.Unlock()
 		} else if command == "off" {
 			meebcast.mutex.Lock()
 			meebcast.status = false
+			if meebcast.turnOff != nil {
+				meebcast.turnOff.Stop()
+			}
 			meebcast.mutex.Unlock()
 		}
 	}

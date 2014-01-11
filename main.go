@@ -3,13 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -43,23 +41,6 @@ type Config struct {
 		Name string
 		Text string
 	}
-}
-
-// Just grab the page, don't care much about errors
-// Used in flickr and wolfram
-func htmlfetch(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode >= 400 {
-		return nil, errors.New("http server return error")
-	}
-	respbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return respbody, nil
 }
 
 func random(limit int) int {
