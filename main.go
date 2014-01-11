@@ -30,6 +30,7 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
+	db *sql.DB
 )
 
 type Config struct {
@@ -105,12 +106,7 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 }
 
 func logMessage(line *irc.Line, channel, message string) {
-	db, err := sql.Open("mysql", config.DBConn)
-	if err != nil {
-		log.Println(err)
-	}
-	defer db.Close()
-	_, err = db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
+	_, err := db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
 		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
 		line.Host, line.Src, line.Cmd, channel, message, line.Time)
 	if err != nil {
@@ -231,6 +227,13 @@ func init() {
 }
 
 func main() {
+	var err error
+	db, err = sql.Open("mysql", config.DBConn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
 	c.SSL = true
