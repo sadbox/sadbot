@@ -65,7 +65,7 @@ func sendUrl(channel, postedUrl string, conn *irc.Conn) {
 		log.Println("content-type is not text/html")
 		return
 	}
-	respbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 4096))
+	respbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 50000))
 	if err != nil {
 		log.Println("error reading posted link")
 		return
