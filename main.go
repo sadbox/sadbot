@@ -206,6 +206,8 @@ func init() {
 
 	flag.Parse()
 
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	configfile, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal(err)
@@ -226,10 +228,6 @@ func init() {
 	for index, command := range config.Commands {
 		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
 	}
-}
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func main() {
