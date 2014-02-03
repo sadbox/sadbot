@@ -55,6 +55,9 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 		log.Println(err)
 		return
 	}
+	if postedUrl.Scheme == "" {
+		postedUrl.Scheme = "http"
+	}
 	log.Println("Fetching title for " + postedUrl.String() + " In channel " + channel)
 
 	resp, err := http.Get(postedUrl.String())
