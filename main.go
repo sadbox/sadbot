@@ -30,7 +30,8 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	db *sql.DB
+	httpRegex = regexp.MustCompile(`http(s)?//.*`)
+	db        *sql.DB
 )
 
 type Config struct {
@@ -50,13 +51,13 @@ type Config struct {
 
 // Try and grab the title for any URL's posted in the channel
 func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
+	if !httpRegex.MatchString(unparsedURL) {
+		unparsedURL = `http://` + unparsedURL
+	}
 	postedUrl, err := url.Parse(unparsedURL)
 	if err != nil {
 		log.Println(err)
 		return
-	}
-	if postedUrl.Scheme == "" {
-		postedUrl.Scheme = "http"
 	}
 	log.Println("Fetching title for " + postedUrl.String() + " In channel " + channel)
 
