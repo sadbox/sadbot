@@ -30,7 +30,7 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex = regexp.MustCompile(`https?://.*`)
+	httpRegex    = regexp.MustCompile(`https?://.*`)
 	db           *sql.DB
 	badWords     = make(map[string]*regexp.Regexp)
 	rebuildWords = flag.Bool("rebuild-words", false, "Rebuild the entire history of cursing. This sucks.")
@@ -249,6 +249,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	db.SetMaxIdleConns(50)
+	db.SetMaxOpenConns(100)
 
 	go makeMarkov()
 
