@@ -246,6 +246,8 @@ func main() {
 	}
 	defer db.Close()
 
+	go makeMarkov()
+
 	if *rebuildWords {
 		go genTables()
 	}
