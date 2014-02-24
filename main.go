@@ -185,9 +185,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		go wolfram(channel, message, line.Nick, conn)
 	case "!meebcast":
 		var command string
-		if len(splitmessage) < 2 {
-			command = ""
-		} else {
+		if len(splitmessage) >= 2 {
 			command = strings.TrimSpace(splitmessage[1])
 		}
 		go meeba(channel, line.Nick, command, conn)
