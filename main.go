@@ -31,7 +31,9 @@ var (
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex = regexp.MustCompile(`https?://.*`)
-	db        *sql.DB
+	db           *sql.DB
+	badWords     = make(map[string]*regexp.Regexp)
+	rebuildWords = flag.Bool("rebuild-words", false, "Rebuild the entire history of cursing. This sucks.")
 )
 
 type Config struct {
@@ -46,6 +48,10 @@ type Config struct {
 	Commands      []struct {
 		Name string
 		Text string
+	}
+	BadWords []struct {
+		Word  string
+		Query string
 	}
 }
 
@@ -116,6 +122,10 @@ func logMessage(line *irc.Line, channel, message string) {
 	if err != nil {
 		log.Println(err)
 	}
+	err = updateWords(line.Nick, message)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func checkForUrl(channel string, splitmessage []string, conn *irc.Conn) {
@@ -161,11 +171,11 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 		}
 	case "!audio":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
+			go conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
 		}
 	case "!cst":
 		if line.Nick == "sadbox" {
-			conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
+			go conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
 		}
 	case "!haata":
 		go haata(channel, conn)
@@ -188,7 +198,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	// Commands that are read in from the config file
 	for _, command := range config.Commands {
 		if strings.TrimSpace(splitmessage[0]) == command.Name {
-			conn.Privmsg(channel, command.Text)
+			go conn.Privmsg(channel, command.Text)
 		}
 	}
 
@@ -216,6 +226,10 @@ func init() {
 		log.Fatal(err)
 	}
 
+	for _, word := range config.BadWords {
+		badWords[word.Word] = regexp.MustCompile(word.Query)
+	}
+
 	log.Println("Loaded config file!")
 	log.Printf("Joining channel %s", config.Channel)
 	log.Printf("Nick: %s", config.Nick)
@@ -236,6 +250,11 @@ func main() {
 	}
 	defer db.Close()
 
+	go makeMarkov()
+
+	if *rebuildWords {
+		go genTables()
+	}
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
 	c.SSL = true

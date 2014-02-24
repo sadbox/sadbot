@@ -109,5 +109,4 @@ func init() {
 	log.Println("Loading markov data.")
 	markovData.Init()
 	markovData.mutex.Lock()
-	go makeMarkov()
 }

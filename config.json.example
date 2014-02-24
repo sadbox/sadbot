@@ -10,5 +10,19 @@
     "Commands" : [
         { "Name": "!help", "Text": "Available commands are !help and !stuff" },
         { "Name": "!stuff", "Text": "This command does nothing but print this!" }
+    ],
+    "BadWords":[
+        {
+         "Word":"OuO",
+         "Query":"ouo"
+        },
+        {
+         "Word":"Flippin",
+         "Query": "(frack|frell|fuuu)"
+        },
+        {
+         "Word":"Blagerflath",
+         "Query":"blagerflath"
+        }
     ]
 }
