@@ -13,27 +13,28 @@ const baseTable = `CREATE TABLE Words (
     `
 
 func updateWords(nick, message string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`SELECT * FROM Words WHERE Nick=? FOR UPDATE`, nick)
+	if err != nil {
+		return err
+	}
 	for word, regex := range badWords {
 		numwords := len(regex.FindAllString(strings.ToLower(message), -1))
 		if numwords == 0 {
 			continue
 		}
-		tx, err := db.Begin()
+		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO Words (Nick, %[1]s) VALUES (?, ?)`+
+			` ON DUPLICATE KEY UPDATE %[1]s=%[1]s+VALUES(%[1]s)`, word), nick, numwords)
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(`SELECT * FROM Words WHERE Nick=? FOR UPDATE`, nick)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO Words (Nick, %[1]s) VALUES (?, ?) ON DUPLICATE KEY UPDATE %[1]s=%[1]s+VALUES(%[1]s)`, word), nick, numwords)
-		if err != nil {
-			return err
-		}
-		err = tx.Commit()
-		if err != nil {
-			return err
-		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
 	}
 	return nil
 }
