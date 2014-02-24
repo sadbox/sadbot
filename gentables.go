@@ -13,7 +13,7 @@ const baseTable = `CREATE TABLE Words (
 
 func updateWords(nick, message string) error {
 	for word, regex := range badWords {
-		numwords := len(regex.FindAllString(message, -1))
+		numwords := len(regex.FindAllString(strings.ToLower(message), -1))
 		if numwords == 0 {
 			continue
 		}
