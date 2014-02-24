@@ -38,6 +38,7 @@ func updateWords(nick, message string) error {
 }
 
 func genTables() {
+	log.Println("Regenerating Words table")
 	wordList := ""
 	for _, word := range config.BadWords {
 		wordList += word.Word + " INT(32) NOT NULL DEFAULT 0, "
@@ -52,7 +53,7 @@ func genTables() {
 		log.Fatal(err)
 	}
 
-	rows, err := db.Query(`SELECT Nick, Message from messages`)
+	rows, err := db.Query(`SELECT Nick, Message from messages WHERE channel='#geekhack'`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,4 +71,5 @@ func genTables() {
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Finished generating Words!")
 }

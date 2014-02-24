@@ -247,9 +247,7 @@ func main() {
 	defer db.Close()
 
 	if *rebuildWords {
-		log.Println("Rebuilding curseword tables!")
-		genTables()
-		log.Println("Finished!")
+		go genTables()
 	}
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
