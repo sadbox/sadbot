@@ -7,7 +7,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"flag"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
@@ -30,10 +29,9 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex    = regexp.MustCompile(`https?://.*`)
-	db           *sql.DB
-	badWords     = make(map[string]*regexp.Regexp)
-	rebuildWords = flag.Bool("rebuild-words", false, "Rebuild the entire history of cursing. This sucks.")
+	httpRegex = regexp.MustCompile(`https?://.*`)
+	db        *sql.DB
+	badWords  = make(map[string]*regexp.Regexp)
 )
 
 type Config struct {
@@ -45,6 +43,7 @@ type Config struct {
 	FlickrAPIKey  string
 	WolframAPIKey string
 	IRCPass       string
+	RebuildWords  bool
 	Commands      []struct {
 		Name string
 		Text string
@@ -212,8 +211,6 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 func init() {
 	log.Println("Starting sadbot")
 
-	flag.Parse()
-
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	configfile, err := os.Open("config.json")
@@ -254,7 +251,7 @@ func main() {
 
 	go makeMarkov()
 
-	if *rebuildWords {
+	if config.RebuildWords {
 		go genTables()
 	}
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
