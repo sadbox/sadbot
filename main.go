@@ -217,8 +217,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	decoder := json.NewDecoder(configfile)
-	err = decoder.Decode(&config)
+	err = json.NewDecoder(configfile).Decode(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
