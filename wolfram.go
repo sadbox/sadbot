@@ -57,30 +57,33 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 		return
 	}
 	log.Println(wolfstruct)
-	if wolfstruct.Success {
-		for _, pod := range wolfstruct.Pods {
-			if pod.Primary {
-				log.Println(query)
-				response := strings.Split(pod.Title+": "+pod.Text, "\n")
-				var numlines int
-				if len(response) > 3 {
-					numlines = 3
-				} else {
-					numlines = len(response)
-				}
-				query = fmt.Sprintf("(In reponse to: <%s> %s)", nick, query)
-				if numlines == 1 {
-					conn.Privmsg(channel, response[0]+" "+query)
-				} else {
-					for _, message := range response[:numlines] {
-						conn.Privmsg(channel, message)
-					}
-					conn.Privmsg(channel, query)
-				}
-				// Sometimes it returns multiple primary pods
-				return
-			}
+	if !wolfstruct.Success {
+		conn.Privmsg(channel, "I have no idea.")
+		return
+	}
+	for _, pod := range wolfstruct.Pods {
+		if !pod.Primary {
+			continue
 		}
+		log.Println(query)
+		response := strings.Split(pod.Title+": "+pod.Text, "\n")
+		var numlines int
+		if len(response) > 3 {
+			numlines = 3
+		} else {
+			numlines = len(response)
+		}
+		query = fmt.Sprintf("(In reponse to: <%s> %s)", nick, query)
+		if numlines == 1 {
+			conn.Privmsg(channel, response[0]+" "+query)
+		} else {
+			for _, message := range response[:numlines] {
+				conn.Privmsg(channel, message)
+			}
+			conn.Privmsg(channel, query)
+		}
+		// Sometimes it returns multiple primary pods
+		return
 	}
 	// If I couldn't find anything just give up...
 	conn.Privmsg(channel, "I have no idea.")
