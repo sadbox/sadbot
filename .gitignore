@@ -25,3 +25,4 @@ sadbot
 config.xml
 deploy.sh
 config.json
+/*.sublime*
