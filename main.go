@@ -17,8 +17,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 	"unicode/utf8"
 )
@@ -245,14 +247,19 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	db.SetMaxIdleConns(50)
-	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(200)
 
 	go makeMarkov()
 
-	if config.RebuildWords {
-		go genTables()
-	}
+	buildchan := make(chan os.Signal, 1)
+	signal.Notify(buildchan, syscall.SIGUSR1)
+	go func() {
+		for _ = range buildchan {
+			genTables()
+		}
+	}()
+
 	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
 
 	c.SSL = true
