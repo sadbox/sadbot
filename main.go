@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -212,6 +213,8 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 
 func init() {
 	log.Println("Starting sadbot")
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

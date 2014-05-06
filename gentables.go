@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 )
 
 const baseTable = `CREATE TABLE Words (
@@ -59,6 +60,23 @@ func genTables() {
 		log.Fatal(err)
 	}
 
+	genChan := make(chan struct {
+		Nick    string
+		Message string
+	})
+	wg := sync.WaitGroup{}
+	for i := 0; i < 100; i++ {
+		go func() {
+			for post := range genChan {
+				err := updateWords(post.Nick, post.Message)
+				if err != nil {
+					log.Fatal(err)
+				}
+				wg.Done()
+			}
+		}()
+	}
+
 	rows, err := db.Query(`SELECT Nick, Message from messages WHERE channel='#geekhack'`)
 	if err != nil {
 		log.Fatal(err)
@@ -69,11 +87,16 @@ func genTables() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = updateWords(nick, message)
-		if err != nil {
-			log.Fatal(err)
-		}
+		wg.Add(1)
+		genChan <- struct {
+			Nick    string
+			Message string
+		}{nick, message}
 	}
+
+	wg.Wait()
+	close(genChan)
+
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
