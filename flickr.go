@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-const flickrApiUrl = "http://api.flickr.com/services/rest/"
+const flickrApiUrl = "https://api.flickr.com/services/rest/"
 
 type Setresp struct {
 	Sets []Set `xml:"collections>collection>set"`
