@@ -14,15 +14,11 @@ import (
 const baseTable = `CREATE TABLE Words (
     Nick VARCHAR(32),
     %s
-    primary KEY (Nick));
+    primary KEY (Nick)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
     `
 
 func updateWords(nick, message string) error {
 	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`SELECT * FROM Words WHERE Nick=? FOR UPDATE`, nick)
 	if err != nil {
 		return err
 	}
