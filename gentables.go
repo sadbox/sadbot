@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-const baseTable = `CREATE TABLE Words (
+const baseTable = `CREATE TABLE words (
     Nick VARCHAR(32),
     %s
     primary KEY (Nick)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -27,7 +27,7 @@ func updateWords(nick, message string) error {
 		if numwords == 0 {
 			continue
 		}
-		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO Words (Nick, %[1]s) VALUES (?, ?)`+
+		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO words (Nick, %[1]s) VALUES (?, ?)`+
 			` ON DUPLICATE KEY UPDATE %[1]s=%[1]s+VALUES(%[1]s)`, word), nick, numwords)
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func genTables() {
 		wordList += word.Word + " INT(32) NOT NULL DEFAULT 0, "
 	}
 
-	_, err := db.Exec(`DROP TABLE IF EXISTS Words`)
+	_, err := db.Exec(`DROP TABLE IF EXISTS words`)
 	if err != nil {
 		log.Fatal(err)
 	}
