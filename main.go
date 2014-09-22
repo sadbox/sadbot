@@ -35,7 +35,7 @@ var (
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
 	httpRegex      = regexp.MustCompile(`https?://.*`)
-	findWhiteSpace = regexp.MustCompile(`\s{1,}`)
+	findWhiteSpace = regexp.MustCompile(`\s+`)
 	db             *sql.DB
 	badWords       = make(map[string]*regexp.Regexp)
 )
