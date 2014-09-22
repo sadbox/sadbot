@@ -7,6 +7,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html"
 	"io"
 	"io/ioutil"
@@ -114,7 +115,7 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 			// Title: sadbox . org (at sadbox.org)
 			title = html.UnescapeString(title)
 			title = findWhiteSpace.ReplaceAllString(title, " ")
-			title = "Title: " + title + " (at " + postedUrl.Host + ")"
+			title = fmt.Sprintf("Title: %s (at %s)", title, postedUrl.Host)
 			log.Println(title)
 			conn.Privmsg(channel, title)
 		}
