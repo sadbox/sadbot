@@ -5,9 +5,10 @@
 package main
 
 import (
-	irc "github.com/fluffle/goirc/client"
 	"sync"
 	"time"
+
+	irc "github.com/fluffle/goirc/client"
 )
 
 var meebcast = meebCast{status: false}

@@ -7,11 +7,12 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	irc "github.com/fluffle/goirc/client"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
+
+	irc "github.com/fluffle/goirc/client"
 )
 
 const wolframAPIUrl = `http://api.wolframalpha.com/v2/query`

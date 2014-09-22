@@ -5,13 +5,14 @@
 package main
 
 import (
-	irc "github.com/fluffle/goirc/client"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"math/rand"
 	"strings"
 	"sync"
 	"unicode"
+
+	irc "github.com/fluffle/goirc/client"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var markovData Markov

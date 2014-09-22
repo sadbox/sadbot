@@ -7,8 +7,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	irc "github.com/fluffle/goirc/client"
-	_ "github.com/go-sql-driver/mysql"
 	"html"
 	"io"
 	"io/ioutil"
@@ -24,6 +22,9 @@ import (
 	"syscall"
 	"time"
 	"unicode/utf8"
+
+	irc "github.com/fluffle/goirc/client"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -32,9 +33,10 @@ var (
 		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
 		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
 		`\]{};:'".,<>?«»“”‘’]))`)
-	httpRegex = regexp.MustCompile(`https?://.*`)
-	db        *sql.DB
-	badWords  = make(map[string]*regexp.Regexp)
+	httpRegex      = regexp.MustCompile(`https?://.*`)
+	findWhiteSpace = regexp.MustCompile(`\s{1,}`)
+	db             *sql.DB
+	badWords       = make(map[string]*regexp.Regexp)
 )
 
 type Config struct {
@@ -110,7 +112,9 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 		if title != "" && utf8.ValidString(title) {
 			// Example:
 			// Title: sadbox . org (at sadbox.org)
-			title = "Title: " + html.UnescapeString(title) + " (at " + postedUrl.Host + ")"
+			title = html.UnescapeString(title)
+			title = findWhiteSpace.ReplaceAllString(title, " ")
+			title = "Title: " + title + " (at " + postedUrl.Host + ")"
 			log.Println(title)
 			conn.Privmsg(channel, title)
 		}

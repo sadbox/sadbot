@@ -6,14 +6,15 @@ package main
 
 import (
 	"encoding/xml"
-	irc "github.com/fluffle/goirc/client"
-	"github.com/tv42/base58"
 	"log"
 	"math/big"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
+
+	irc "github.com/fluffle/goirc/client"
+	"github.com/tv42/base58"
 )
 
 const flickrApiUrl = "https://api.flickr.com/services/rest/"

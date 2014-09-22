@@ -5,10 +5,11 @@
 package main
 
 import (
-	irc "github.com/fluffle/goirc/client"
 	"net/url"
 	"strings"
 	"time"
+
+	irc "github.com/fluffle/goirc/client"
 )
 
 // http://bash.org/?4281
