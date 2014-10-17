@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	irc "github.com/fluffle/goirc/client"
+	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
 )
 
 const wolframAPIUrl = `http://api.wolframalpha.com/v2/query`

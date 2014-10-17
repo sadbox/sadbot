@@ -24,8 +24,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	irc "github.com/fluffle/goirc/client"
-	_ "github.com/go-sql-driver/mysql"
+	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
+	_ "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
 )
 
 var (

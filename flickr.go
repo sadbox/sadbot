@@ -13,8 +13,8 @@ import (
 	"net/url"
 	"strings"
 
-	irc "github.com/fluffle/goirc/client"
-	"github.com/tv42/base58"
+	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
+	"github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/tv42/base58"
 )
 
 const flickrApiUrl = "https://api.flickr.com/services/rest/"
