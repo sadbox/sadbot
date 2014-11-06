@@ -170,28 +170,26 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	message := line.Args[1]
 	splitmessage := strings.Split(message, " ")
 
+	// sadbox-only commands!
+	if line.Nick == "sadbox" {
+		switch strings.TrimSpace(splitmessage[0]) {
+		case "!dance":
+			go dance(channel, conn)
+		case "!audio":
+			go conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
+		case "!cst":
+			go conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
+		case "!chatter":
+			go markov(channel, conn)
+		}
+	}
+
 	// Special commands
 	switch strings.TrimSpace(splitmessage[0]) {
-	case "!dance":
-		if line.Nick == "sadbox" {
-			go dance(channel, conn)
-		}
-	case "!audio":
-		if line.Nick == "sadbox" {
-			go conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
-		}
-	case "!cst":
-		if line.Nick == "sadbox" {
-			go conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
-		}
 	case "!haata":
 		go haata(channel, conn)
 	case "!search":
 		go googSearch(channel, message, conn)
-	case "!chatter":
-		if line.Nick == "sadbox" {
-			go markov(channel, conn)
-		}
 	case "!ask":
 		go wolfram(channel, message, line.Nick, conn)
 	case "!meebcast":
