@@ -205,7 +205,13 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	// Commands that are read in from the config file
 	for _, command := range config.Commands {
 		if strings.TrimSpace(splitmessage[0]) == command.Name {
-			go conn.Privmsg(channel, command.Text)
+			var response string
+			if len(splitmessage) >= 2 {
+				response = fmt.Sprintf("%s: %s", splitmessage[1], command.Text)
+			} else {
+				response = command.Text
+			}
+			go conn.Privmsg(channel, response)
 		}
 	}
 
