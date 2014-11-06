@@ -169,10 +169,11 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	}
 	message := line.Args[1]
 	splitmessage := strings.Split(message, " ")
+	cmd := strings.TrimSpace(splitmessage[0])
 
 	// sadbox-only commands!
 	if line.Nick == "sadbox" {
-		switch strings.TrimSpace(splitmessage[0]) {
+		switch cmd {
 		case "!dance":
 			go dance(channel, conn)
 		case "!audio":
@@ -185,7 +186,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	}
 
 	// Special commands
-	switch strings.TrimSpace(splitmessage[0]) {
+	switch cmd {
 	case "!haata":
 		go haata(channel, conn)
 	case "!search":
@@ -202,7 +203,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 
 	// Commands that are read in from the config file
 	for _, command := range config.Commands {
-		if strings.TrimSpace(splitmessage[0]) == command.Name {
+		if cmd == command.Name {
 			var response string
 			if len(splitmessage) >= 2 {
 				response = fmt.Sprintf("%s: %s", splitmessage[1], command.Text)
