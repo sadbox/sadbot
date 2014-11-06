@@ -23,7 +23,7 @@ func updateWords(nick, message string) error {
 		return err
 	}
 	for word, regex := range badWords {
-		numwords := len(regex.FindAllString(strings.ToLower(message), -1))
+		numwords := len(regex.FindAllStringIndex(strings.ToLower(message), -1))
 		if numwords == 0 {
 			continue
 		}
