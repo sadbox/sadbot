@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 
 	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
 	_ "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
+	"golang.org/x/net/html/charset"
 )
 
 var (
@@ -38,6 +40,8 @@ var (
 	findWhiteSpace = regexp.MustCompile(`\s+`)
 	db             *sql.DB
 	badWords       = make(map[string]*regexp.Regexp)
+	titleStart     = []byte("<title>")
+	titleEnd       = []byte("</title>")
 )
 
 type Config struct {
@@ -98,28 +102,34 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 		return
 	}
 
-	restofbody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 50000))
+	utf8Body, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
+	if err != nil {
+		log.Println("error converting page to utf8")
+		return
+	}
+	restofbody, err := ioutil.ReadAll(io.LimitReader(utf8Body, 50000))
 	if err != nil {
 		log.Println("error reading posted link")
 		return
 	}
 	respbody = append(respbody, restofbody...)
-	stringbody := string(respbody)
-	titlestart := strings.Index(stringbody, "<title>")
-	titleend := strings.Index(stringbody, "</title>")
-	if titlestart != -1 && titlestart != -1 {
-		title := string(respbody[titlestart+7 : titleend])
-		title = strings.TrimSpace(title)
-		if title != "" && utf8.ValidString(title) {
-			// Example:
-			// Title: sadbox . org (at sadbox.org)
-			title = html.UnescapeString(title)
-			title = findWhiteSpace.ReplaceAllString(title, " ")
-			title = fmt.Sprintf("Title: %s (at %s)", title, postedUrl.Host)
-			log.Println(title)
-			conn.Privmsg(channel, title)
-		}
+	titlestart := bytes.Index(respbody, titleStart)
+	titleend := bytes.Index(respbody, titleEnd)
+	if titlestart == -1 || titleend == -1 {
+		return
 	}
+	title := respbody[titlestart+7 : titleend]
+	title = bytes.TrimSpace(title)
+	if len(title) == 0 || !utf8.Valid(title) {
+		return
+	}
+	// Example:
+	// Title: sadbox . org (at sadbox.org)
+	formattedTitle := html.UnescapeString(string(title))
+	formattedTitle = findWhiteSpace.ReplaceAllString(formattedTitle, " ")
+	formattedTitle = fmt.Sprintf("Title: %s (at %s)", formattedTitle, postedUrl.Host)
+	log.Println(formattedTitle)
+	conn.Privmsg(channel, formattedTitle)
 }
 
 func logMessage(line *irc.Line, channel, message string) {
