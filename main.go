@@ -27,7 +27,7 @@ import (
 
 	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
 	_ "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
-	"golang.org/x/net/html/charset"
+	"github.com/sadbox/sadbot/Godeps/_workspace/src/golang.org/x/net/html/charset"
 )
 
 var (

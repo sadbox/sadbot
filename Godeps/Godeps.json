@@ -30,6 +30,21 @@
 		{
 			"ImportPath": "github.com/tv42/base58",
 			"Rev": "bf185f8b1a40ddea2698c6f1a4b019347b8df8bf"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Comment": "null-206",
+			"Rev": "d77da452e5c51c7cf54b069b11090e786f2551be"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding",
+			"Comment": "null-106",
+			"Rev": "f230eca7a9431ddd0ee1c1174e676fcb944d1a40"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Comment": "null-106",
+			"Rev": "f230eca7a9431ddd0ee1c1174e676fcb944d1a40"
 		}
 	]
 }
