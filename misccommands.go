@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
+	irc "github.com/fluffle/goirc/client"
 )
 
 // http://bash.org/?4281

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
+	irc "github.com/fluffle/goirc/client"
 )
 
 var meebcast = meebCast{status: false}

@@ -25,9 +25,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
-	_ "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/go-sql-driver/mysql"
-	"github.com/sadbox/sadbot/Godeps/_workspace/src/golang.org/x/net/html/charset"
+	irc "github.com/fluffle/goirc/client"
+	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/net/html/charset"
 )
 
 var (
@@ -43,6 +43,8 @@ var (
 	titleStart     = []byte("<title>")
 	titleEnd       = []byte("</title>")
 )
+
+const FREENODE = "irc.freenode.net"
 
 type Config struct {
 	Channel       string
@@ -172,7 +174,7 @@ NextWord:
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	// This is so that the bot can properly respond to pm's
 	var channel string
-	if conn.Me.Nick == line.Args[0] {
+	if conn.Me().Nick == line.Args[0] {
 		channel = line.Nick
 	} else {
 		channel = line.Args[0]
@@ -283,25 +285,27 @@ func main() {
 		}
 	}()
 
-	c := irc.SimpleClient(config.Nick, config.Ident, config.FullName)
+	ircConfig := irc.NewConfig(config.Nick, config.Ident, config.FullName)
+	ircConfig.SSL = true
+	ircConfig.Server = FREENODE
+	ircConfig.Pass = config.Nick + ":" + config.IRCPass
 
-	c.SSL = true
+	c := irc.Client(ircConfig)
 
-	c.AddHandler(irc.CONNECTED,
+	c.HandleFunc(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
 			conn.Join(config.Channel)
 			log.Println("Connected!")
 		})
-
 	quit := make(chan bool)
 
-	c.AddHandler(irc.DISCONNECTED,
+	c.HandleFunc(irc.DISCONNECTED,
 		func(conn *irc.Conn, line *irc.Line) { quit <- true })
 
-	c.AddHandler("PRIVMSG", handleMessage)
-	c.AddHandler("ACTION", handleMessage)
+	c.HandleFunc(irc.PRIVMSG, handleMessage)
+	c.HandleFunc(irc.ACTION, handleMessage)
 
-	if err := c.Connect("irc.freenode.net", config.Nick+":"+config.IRCPass); err != nil {
+	if err := c.Connect(); err != nil {
 		log.Fatalln("Connection error: %s\n", err)
 	}
 

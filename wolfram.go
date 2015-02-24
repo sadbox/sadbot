@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	irc "github.com/sadbox/sadbot/Godeps/_workspace/src/github.com/fluffle/goirc/client"
+	irc "github.com/fluffle/goirc/client"
 )
 
 const wolframAPIUrl = `http://api.wolframalpha.com/v2/query`
@@ -57,12 +57,16 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 		log.Println(err)
 		return
 	}
-	log.Println(wolfstruct)
+	log.Printf("%+v\n", wolfstruct)
 	if !wolfstruct.Success {
 		conn.Privmsg(channel, "I have no idea.")
 		return
 	}
+	var interpretation string
 	for _, pod := range wolfstruct.Pods {
+		if pod.Title == "Input interpretation" {
+			interpretation = pod.Title + ": " + pod.Text
+		}
 		if !pod.Primary {
 			continue
 		}
@@ -75,6 +79,9 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 			numlines = len(response)
 		}
 		query = fmt.Sprintf("(In reponse to: <%s> %s)", nick, query)
+		if interpretation != "" {
+			conn.Privmsg(channel, interpretation)
+		}
 		if numlines == 1 {
 			conn.Privmsg(channel, response[0]+" "+query)
 		} else {
