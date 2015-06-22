@@ -173,12 +173,7 @@ NextWord:
 // as well as logging each message to the database
 func handleMessage(conn *irc.Conn, line *irc.Line) {
 	// This is so that the bot can properly respond to pm's
-	var channel string
-	if conn.Me().Nick == line.Args[0] {
-		channel = line.Nick
-	} else {
-		channel = line.Args[0]
-	}
+	channel := line.Target()
 	message := line.Args[1]
 	splitmessage := strings.Split(message, " ")
 	cmd := strings.TrimSpace(splitmessage[0])
