@@ -47,7 +47,7 @@ var (
 const FREENODE = "irc.freenode.net"
 
 type Config struct {
-	Channel       string
+	Channels      []string
 	DBConn        string
 	Nick          string
 	Ident         string
@@ -249,7 +249,7 @@ func init() {
 	}
 
 	log.Println("Loaded config file!")
-	log.Printf("Joining channel %s", config.Channel)
+	log.Printf("Joining: %s", config.Channels)
 	log.Printf("Nick: %s", config.Nick)
 	log.Printf("Ident: %s", config.Ident)
 	log.Printf("FullName: %s", config.FullName)
@@ -289,7 +289,10 @@ func main() {
 
 	c.HandleFunc(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
-			conn.Join(config.Channel)
+			for _, channel := range config.Channels {
+				log.Printf("Joining %s", channel)
+				conn.Join(channel)
+			}
 			log.Println("Connected!")
 		})
 	quit := make(chan bool)
