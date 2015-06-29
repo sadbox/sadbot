@@ -32,11 +32,7 @@ import (
 )
 
 var (
-	config   Config
-	urlRegex = regexp.MustCompile(`(?i)\b((?:https?://|www\d{0,3}[.]|[` +
-		`a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+` +
-		`\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s` + "`" + `!()\[` +
-		`\]{};:'".,<>?«»“”‘’]))`)
+	config         Config
 	httpRegex      = regexp.MustCompile(`https?://.*`)
 	findWhiteSpace = regexp.MustCompile(`\s+`)
 	db             *sql.DB
