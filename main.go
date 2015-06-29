@@ -27,6 +27,7 @@ import (
 
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/mvdan/xurls"
 	"golang.org/x/net/html/charset"
 )
 
@@ -67,7 +68,7 @@ type Config struct {
 }
 
 // Try and grab the title for any URL's posted in the channel
-func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
+func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 	if !httpRegex.MatchString(unparsedURL) {
 		unparsedURL = `http://` + unparsedURL
 	}
@@ -129,7 +130,7 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn) {
 	// Title: sadbox . org (at sadbox.org)
 	formattedTitle := html.UnescapeString(string(title))
 	formattedTitle = findWhiteSpace.ReplaceAllString(formattedTitle, " ")
-	formattedTitle = fmt.Sprintf("Title: %s (at %s)", formattedTitle, postedUrl.Host)
+	formattedTitle = fmt.Sprintf("(%s) %s (at %s)", nick, formattedTitle, postedUrl.Host)
 	log.Println(formattedTitle)
 	conn.Privmsg(channel, formattedTitle)
 }
@@ -147,25 +148,18 @@ func logMessage(line *irc.Line, channel, message string) {
 	}
 }
 
-func checkForUrl(channel string, splitmessage []string, conn *irc.Conn) {
-	urllist := []string{}
+func checkForUrl(channel, message, nick string, conn *irc.Conn) {
+	urllist := make(map[string]struct{})
+	for _, item := range xurls.Relaxed.FindAllString(message, -1) {
+		urllist[item] = struct{}{}
+	}
 	numlinks := 0
-NextWord:
-	for _, word := range splitmessage {
-		word = strings.TrimSpace(word)
-		if urlRegex.MatchString(word) {
-			for _, subUrl := range urllist {
-				if subUrl == word {
-					continue NextWord
-				}
-			}
-			numlinks++
-			if numlinks > 3 {
-				break
-			}
-			urllist = append(urllist, word)
-			go sendUrl(channel, word, conn)
+	for item, _ := range urllist {
+		numlinks++
+		if numlinks > 3 {
+			break
 		}
+		go sendUrl(channel, item, conn, nick)
 	}
 }
 
@@ -222,7 +216,7 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	}
 
 	// This is what looks at each word and tries to figure out if it's a URL
-	go checkForUrl(channel, splitmessage, conn)
+	go checkForUrl(channel, message, line.Nick, conn)
 
 	// Shove that shit in the database!
 	go logMessage(line, channel, message)
