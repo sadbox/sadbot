@@ -54,8 +54,11 @@ type Config struct {
 	IRCPass       string
 	RebuildWords  bool
 	Commands      []struct {
-		Name string
-		Text string
+		Channel  string
+		Commands []struct {
+			Name string
+			Text string
+		}
 	}
 	BadWords []struct {
 		Word  string
@@ -199,15 +202,21 @@ func handleMessage(conn *irc.Conn, line *irc.Line) {
 	}
 
 	// Commands that are read in from the config file
-	for _, command := range config.Commands {
-		if cmd == command.Name {
-			var response string
-			if len(splitmessage) >= 2 {
-				response = fmt.Sprintf("%s: %s", splitmessage[1], command.Text)
-			} else {
-				response = command.Text
+AllConfigs:
+	for _, commandConfig := range config.Commands {
+		if commandConfig.Channel == channel || commandConfig.Channel == "default" {
+			for _, command := range commandConfig.Commands {
+				if cmd == command.Name {
+					var response string
+					if len(splitmessage) >= 2 {
+						response = fmt.Sprintf("%s: %s", splitmessage[1], command.Text)
+					} else {
+						response = command.Text
+					}
+					go conn.Privmsg(channel, response)
+					break AllConfigs
+				}
 			}
-			go conn.Privmsg(channel, response)
 		}
 	}
 
@@ -244,10 +253,14 @@ func init() {
 	log.Printf("Ident: %s", config.Ident)
 	log.Printf("FullName: %s", config.FullName)
 
-	log.Printf("Found %d commands", len(config.Commands))
-	for index, command := range config.Commands {
-		log.Printf("%d %s: %s", index+1, command.Name, command.Text)
+	numcommands := 0
+	for _, commandConfig := range config.Commands {
+		for _, command := range commandConfig.Commands {
+			numcommands++
+			log.Printf("%d %s/%s: %s", numcommands, commandConfig.Channel, command.Name, command.Text)
+		}
 	}
+	log.Printf("Found %d commands")
 }
 
 func main() {
