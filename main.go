@@ -289,6 +289,7 @@ func main() {
 	c.HandleFunc(irc.PRIVMSG, markov)
 	c.HandleFunc(irc.PRIVMSG, dance)
 	c.HandleFunc(irc.PRIVMSG, cst)
+	c.HandleFunc(irc.PRIVMSG, roll)
 	c.HandleFunc(irc.PRIVMSG, configCommands)
 
 	if err := c.Connect(); err != nil {
