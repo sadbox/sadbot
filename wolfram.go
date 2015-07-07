@@ -29,10 +29,13 @@ type Pod struct {
 	Primary bool   `xml:"primary,attr"`
 }
 
-func wolfram(channel, query, nick string, conn *irc.Conn) {
-	query = strings.TrimSpace(query[4:])
-	if strings.TrimSpace(query) == "" {
-		conn.Privmsg(channel, "Example: !ask pi")
+func wolfram(conn *irc.Conn, line *irc.Line) {
+	if !strings.HasPrefix(line.Text(), "!ask") {
+		return
+	}
+	query := strings.TrimSpace(strings.TrimPrefix(line.Text(), "!ask"))
+	if query == "" {
+		conn.Privmsg(line.Target(), "Example: !ask pi")
 		return
 	}
 	log.Printf("Searching wolfram alpha for %s", query)
@@ -59,7 +62,7 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 	}
 	log.Printf("%+v\n", wolfstruct)
 	if !wolfstruct.Success {
-		conn.Privmsg(channel, "I have no idea.")
+		conn.Privmsg(line.Target(), "I have no idea.")
 		return
 	}
 	var interpretation string
@@ -78,21 +81,21 @@ func wolfram(channel, query, nick string, conn *irc.Conn) {
 		} else {
 			numlines = len(response)
 		}
-		query = fmt.Sprintf("(In reponse to: <%s> %s)", nick, query)
+		query = fmt.Sprintf("(In reponse to: <%s> %s)", line.Nick, query)
 		if interpretation != "" {
-			conn.Privmsg(channel, interpretation)
+			conn.Privmsg(line.Target(), interpretation)
 		}
 		if numlines == 1 {
-			conn.Privmsg(channel, response[0]+" "+query)
+			conn.Privmsg(line.Target(), response[0]+" "+query)
 		} else {
 			for _, message := range response[:numlines] {
-				conn.Privmsg(channel, message)
+				conn.Privmsg(line.Target(), message)
 			}
-			conn.Privmsg(channel, query)
+			conn.Privmsg(line.Target(), query)
 		}
 		// Sometimes it returns multiple primary pods
 		return
 	}
 	// If I couldn't find anything just give up...
-	conn.Privmsg(channel, "I have no idea.")
+	conn.Privmsg(line.Target(), "I have no idea.")
 }

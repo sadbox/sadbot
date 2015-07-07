@@ -5,6 +5,7 @@
 package main
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -19,8 +20,16 @@ type meebCast struct {
 	status  bool
 }
 
-func meeba(channel, nick, command string, conn *irc.Conn) {
-	if nick == "meeba" || nick == "sadbox" {
+func meeba(conn *irc.Conn, line *irc.Line) {
+	if !strings.HasPrefix(line.Text(), "!meebcast") {
+		return
+	}
+	splitline := strings.Split(line.Text(), " ")
+	command := ""
+	if len(splitline) > 1 {
+		command = splitline[1]
+	}
+	if line.Nick == "meeba" || line.Nick == "sadbox" {
 		if command == "on" {
 			meebcast.mutex.Lock()
 			meebcast.status = true
@@ -44,8 +53,8 @@ func meeba(channel, nick, command string, conn *irc.Conn) {
 	meebcast.mutex.RLock()
 	defer meebcast.mutex.RUnlock()
 	if meebcast.status {
-		go conn.Privmsg(channel, "Drinking Problem show is \u00030,3on air\u000f! Tune in: http://radio.abstractionpoint.org")
+		go conn.Privmsg(line.Target(), "Drinking Problem show is \u00030,3on air\u000f! Tune in: http://radio.abstractionpoint.org")
 	} else {
-		go conn.Privmsg(channel, "Drinking Problem show is \u00030,4off the air\u000f! Tune in: http://radio.abstractionpoint.org")
+		go conn.Privmsg(line.Target(), "Drinking Problem show is \u00030,4off the air\u000f! Tune in: http://radio.abstractionpoint.org")
 	}
 }

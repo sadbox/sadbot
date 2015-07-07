@@ -65,6 +65,12 @@ type Config struct {
 	}
 }
 
+func getCommand(line *irc.Line) string {
+	splitmessage := strings.Split(line.Text(), " ")
+	cmd := strings.TrimSpace(splitmessage[0])
+	return cmd
+}
+
 // Try and grab the title for any URL's posted in the channel
 func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 	if !httpRegex.MatchString(unparsedURL) {
@@ -137,22 +143,22 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 	conn.Privmsg(channel, formattedTitle)
 }
 
-func logMessage(line *irc.Line, channel, message string) {
+func logMessage(conn *irc.Conn, line *irc.Line) {
 	_, err := db.Exec("insert into messages (Nick, Ident, Host, Src, Cmd, Channel,"+
 		" Message, Time) values (?, ?, ?, ?, ?, ?, ?, ?)", line.Nick, line.Ident,
-		line.Host, line.Src, line.Cmd, channel, message, line.Time)
+		line.Host, line.Src, line.Cmd, line.Target(), line.Text(), line.Time)
 	if err != nil {
 		log.Println(err)
 	}
-	err = updateWords(line.Nick, message)
+	err = updateWords(line.Nick, line.Text())
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func checkForUrl(channel, message, nick string, conn *irc.Conn) {
+func checkForUrl(conn *irc.Conn, line *irc.Line) {
 	urllist := make(map[string]struct{})
-	for _, item := range xurls.Relaxed.FindAllString(message, -1) {
+	for _, item := range xurls.Relaxed.FindAllString(line.Text(), -1) {
 		urllist[item] = struct{}{}
 	}
 	numlinks := 0
@@ -161,73 +167,37 @@ func checkForUrl(channel, message, nick string, conn *irc.Conn) {
 		if numlinks > 3 {
 			break
 		}
-		go sendUrl(channel, item, conn, nick)
+		go sendUrl(line.Target(), item, conn, line.Nick)
 	}
 }
 
-// This function does all the dispatching for various commands
-// as well as logging each message to the database
-func handleMessage(conn *irc.Conn, line *irc.Line) {
-	// This is so that the bot can properly respond to pm's
-	channel := line.Target()
-	message := line.Args[1]
-	splitmessage := strings.Split(message, " ")
-	cmd := strings.TrimSpace(splitmessage[0])
-
-	// sadbox-only commands!
-	if line.Nick == "sadbox" {
-		switch cmd {
-		case "!dance":
-			go dance(channel, conn)
-		case "!audio":
-			go conn.Privmsg(channel, "https://sadbox.org/static/stuff/audiophile.html")
-		case "!cst":
-			go conn.Privmsg(channel, "\u00039,13#CSTMASTERRACE")
-		case "!chatter":
-			go markov(channel, conn)
-		}
+func cst(conn *irc.Conn, line *irc.Line) {
+	if line.Nick != "sadbox" || getCommand(line) != "!cst" {
+		return
 	}
+	go conn.Privmsg(line.Target(), "\u00039,13#CSTMASTERRACE")
+}
 
-	// Special commands
-	switch cmd {
-	case "!haata":
-		go haata(channel, conn)
-	case "!search":
-		go googSearch(channel, message, conn)
-	case "!ask":
-		go wolfram(channel, message, line.Nick, conn)
-	case "!meebcast":
-		var command string
-		if len(splitmessage) >= 2 {
-			command = strings.TrimSpace(splitmessage[1])
-		}
-		go meeba(channel, line.Nick, command, conn)
-	}
-
-	// Commands that are read in from the config file
+// Commands that are read in from the config file
+func configCommands(conn *irc.Conn, line *irc.Line) {
+	splitmessage := strings.Split(line.Text(), " ")
 AllConfigs:
 	for _, commandConfig := range config.Commands {
-		if commandConfig.Channel == channel || commandConfig.Channel == "default" {
+		if commandConfig.Channel == line.Target() || commandConfig.Channel == "default" {
 			for _, command := range commandConfig.Commands {
-				if cmd == command.Name {
+				if getCommand(line) == command.Name {
 					var response string
 					if len(splitmessage) >= 2 {
 						response = fmt.Sprintf("%s: %s", splitmessage[1], command.Text)
 					} else {
 						response = command.Text
 					}
-					go conn.Privmsg(channel, response)
+					go conn.Privmsg(line.Target(), response)
 					break AllConfigs
 				}
 			}
 		}
 	}
-
-	// This is what looks at each word and tries to figure out if it's a URL
-	go checkForUrl(channel, message, line.Nick, conn)
-
-	// Shove that shit in the database!
-	go logMessage(line, channel, message)
 }
 
 func init() {
@@ -306,8 +276,20 @@ func main() {
 	c.HandleFunc(irc.DISCONNECTED,
 		func(conn *irc.Conn, line *irc.Line) { quit <- true })
 
-	c.HandleFunc(irc.PRIVMSG, handleMessage)
-	c.HandleFunc(irc.ACTION, handleMessage)
+	// Handle all the things
+	c.HandleFunc(irc.PRIVMSG, logMessage)
+	c.HandleFunc(irc.ACTION, logMessage)
+
+	c.HandleFunc(irc.PRIVMSG, checkForUrl)
+	c.HandleFunc(irc.ACTION, checkForUrl)
+
+	c.HandleFunc(irc.PRIVMSG, haata)
+	c.HandleFunc(irc.PRIVMSG, wolfram)
+	c.HandleFunc(irc.PRIVMSG, meeba)
+	c.HandleFunc(irc.PRIVMSG, markov)
+	c.HandleFunc(irc.PRIVMSG, dance)
+	c.HandleFunc(irc.PRIVMSG, cst)
+	c.HandleFunc(irc.PRIVMSG, configCommands)
 
 	if err := c.Connect(); err != nil {
 		log.Fatalln("Connection error: %s\n", err)

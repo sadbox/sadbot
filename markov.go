@@ -48,7 +48,10 @@ func removeChars(bigstring, removeset string) string {
 }
 
 // This is what generates the actual markov chain
-func markov(channel string, conn *irc.Conn) {
+func markov(conn *irc.Conn, line *irc.Line) {
+	if line.Nick != "sadbox" || getCommand(line) != "!chatter" {
+		return
+	}
 	markovData.mutex.RLock()
 	var markovchain string
 	messageLength := rand.Intn(50) + 10
@@ -71,7 +74,7 @@ func markov(channel string, conn *irc.Conn) {
 		randnext := rand.Intn(len(markovData.bigmap[searchfor]))
 		markovchain = markovchain + " " + markovData.bigmap[searchfor][randnext]
 	}
-	conn.Privmsg(channel, markovchain+".")
+	conn.Privmsg(line.Target(), markovchain+".")
 	markovData.mutex.RUnlock()
 }
 

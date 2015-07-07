@@ -43,7 +43,10 @@ type Photo struct {
 }
 
 // Fetch a random picture from one of Haata's keyboard sets
-func haata(channel string, conn *irc.Conn) {
+func haata(conn *irc.Conn, line *irc.Line) {
+	if !strings.HasPrefix(line.Text(), "!haata") {
+		return
+	}
 	flickrUrl, err := url.Parse(flickrApiUrl)
 	if err != nil {
 		log.Println(err)
@@ -100,5 +103,5 @@ func haata(channel string, conn *irc.Conn) {
 	// flickr's short url's are encoded using base58... this seems messy
 	// Maybe use the proper long url?
 	photostring := string(base58.EncodeBig([]byte{}, big.NewInt(photoresp.Photos[randpic].Id)))
-	conn.Privmsg(channel, strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
+	conn.Privmsg(line.Target(), strings.TrimSpace(setresp.Sets[randsetindex].Title)+`: http://flic.kr/p/`+photostring)
 }
