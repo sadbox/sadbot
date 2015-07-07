@@ -290,6 +290,7 @@ func main() {
 	c.HandleFunc(irc.PRIVMSG, dance)
 	c.HandleFunc(irc.PRIVMSG, cst)
 	c.HandleFunc(irc.PRIVMSG, roll)
+	c.HandleFunc(irc.PRIVMSG, btc)
 	c.HandleFunc(irc.PRIVMSG, lastSeen)
 	c.HandleFunc(irc.PRIVMSG, configCommands)
 
