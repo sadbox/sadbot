@@ -77,7 +77,7 @@ func markov(channel string, conn *irc.Conn) {
 
 // Build the whole markov chain.. this sits in memory, so adjust the limit and junk
 func makeMarkov() {
-	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' limit 30000`)
+	rows, err := db.Query(`SELECT Message from messages where Channel = '#geekhack' order by RAND() limit 30000`)
 	if err != nil {
 		log.Fatal(err)
 	}

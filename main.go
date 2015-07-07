@@ -25,6 +25,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/PuerkitoBio/goquery"
 	irc "github.com/fluffle/goirc/client"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mvdan/xurls"
@@ -37,8 +38,6 @@ var (
 	findWhiteSpace = regexp.MustCompile(`\s+`)
 	db             *sql.DB
 	badWords       = make(map[string]*regexp.Regexp)
-	titleStart     = []byte("<title>")
-	titleEnd       = []byte("</title>")
 )
 
 const FREENODE = "irc.freenode.net"
@@ -106,30 +105,34 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 
 	utf8Body, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
 	if err != nil {
-		log.Println("error converting page to utf8")
+		log.Println("Error converting page to utf8:", err)
 		return
 	}
 	restofbody, err := ioutil.ReadAll(io.LimitReader(utf8Body, 50000))
 	if err != nil {
-		log.Println("error reading posted link")
+		log.Println("Error reading posted link:", err)
 		return
 	}
 	respbody = append(respbody, restofbody...)
-	titlestart := bytes.Index(respbody, titleStart)
-	titleend := bytes.Index(respbody, titleEnd)
-	if titlestart == -1 || titleend == -1 {
+	query, err := goquery.NewDocumentFromReader(bytes.NewReader(respbody))
+	if err != nil {
+		log.Println("Error parsing HTML tree:", err)
 		return
 	}
-	title := respbody[titlestart+7 : titleend]
-	title = bytes.TrimSpace(title)
-	if len(title) == 0 || !utf8.Valid(title) {
+	title := query.Find("title").Text()
+	title = strings.TrimSpace(title)
+	if len(title) == 0 || !utf8.ValidString(title) {
 		return
 	}
 	// Example:
 	// Title: sadbox . org (at sadbox.org)
-	formattedTitle := html.UnescapeString(string(title))
+	hostNick := fmt.Sprintf(" (%s / %s)", postedUrl.Host, nick)
+	formattedTitle := html.UnescapeString(title)
 	formattedTitle = findWhiteSpace.ReplaceAllString(formattedTitle, " ")
-	formattedTitle = fmt.Sprintf("(%s) %s (at %s)", nick, formattedTitle, postedUrl.Host)
+	if len(formattedTitle) > conn.Config().SplitLen-len(hostNick)-1 {
+		formattedTitle = formattedTitle[:conn.Config().SplitLen-len(hostNick)-1]
+	}
+	formattedTitle = formattedTitle + hostNick
 	log.Println(formattedTitle)
 	conn.Privmsg(channel, formattedTitle)
 }
@@ -260,7 +263,7 @@ func init() {
 			log.Printf("%d %s/%s: %s", numcommands, commandConfig.Channel, command.Name, command.Text)
 		}
 	}
-	log.Printf("Found %d commands")
+	log.Printf("Found %d commands", numcommands)
 }
 
 func main() {
