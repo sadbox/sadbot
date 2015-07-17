@@ -30,6 +30,7 @@ func updateWords(nick, message string) error {
 		_, err = tx.Exec(fmt.Sprintf(`INSERT INTO words (Nick, %[1]s) VALUES (?, ?)`+
 			` ON DUPLICATE KEY UPDATE %[1]s=%[1]s+VALUES(%[1]s)`, word), nick, numwords)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 	}

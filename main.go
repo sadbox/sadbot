@@ -43,16 +43,17 @@ var (
 const FREENODE = "irc.freenode.net"
 
 type Config struct {
-	Channels      []string
-	DBConn        string
-	Nick          string
-	Ident         string
-	FullName      string
-	FlickrAPIKey  string
-	WolframAPIKey string
-	IRCPass       string
-	RebuildWords  bool
-	Commands      []struct {
+	Channels             []string
+	DBConn               string
+	Nick                 string
+	Ident                string
+	FullName             string
+	FlickrAPIKey         string
+	WolframAPIKey        string
+	OpenWeatherMapAPIKey string
+	IRCPass              string
+	RebuildWords         bool
+	Commands             []struct {
 		Channel  string
 		Commands []struct {
 			Name string
@@ -292,6 +293,7 @@ func main() {
 	c.HandleFunc(irc.PRIVMSG, roll)
 	c.HandleFunc(irc.PRIVMSG, btc)
 	c.HandleFunc(irc.PRIVMSG, lastSeen)
+	c.HandleFunc(irc.PRIVMSG, showWeather)
 	c.HandleFunc(irc.PRIVMSG, configCommands)
 
 	if err := c.Connect(); err != nil {
