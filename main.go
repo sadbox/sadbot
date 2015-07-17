@@ -158,7 +158,7 @@ func logMessage(conn *irc.Conn, line *irc.Line) {
 }
 
 func checkForUrl(conn *irc.Conn, line *irc.Line) {
-	if !strings.HasPrefix(line.Text(), "#") {
+	if strings.HasPrefix(line.Text(), "#") {
 		return
 	}
 	urllist := make(map[string]struct{})

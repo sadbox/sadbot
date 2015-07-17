@@ -37,17 +37,17 @@ type owmData struct {
 	Base string `json:"base"`
 	Main struct {
 		Temp     float64 `json:"temp"`
-		Pressure int     `json:"pressure"`
-		Humidity int     `json:"humidity"`
+		Pressure float64 `json:"pressure"`
+		Humidity float64 `json:"humidity"`
 		TempMin  float64 `json:"temp_min"`
 		TempMax  float64 `json:"temp_max"`
 	} `json:"main"`
 	Wind struct {
 		Speed float64 `json:"speed"`
-		Deg   int     `json:"deg"`
+		Deg   float64 `json:"deg"`
 	} `json:"wind"`
 	Clouds struct {
-		All int `json:"all"`
+		All float64 `json:"all"`
 	} `json:"clouds"`
 	Dt  int `json:"dt"`
 	Sys struct {
@@ -74,12 +74,12 @@ func (o *owmData) String() string {
 	windDir := getDirection(o.Wind.Deg)
 	windSpeedMph := o.Wind.Speed * 2.23694
 	windSpeedKph := o.Wind.Speed * 3.6
-	return fmt.Sprintf("%s. %.1f °F / %.1f °C. Humidity %d%%. Wind from the %s at %.1f m/h / %.1f km/h. (%s)",
+	return fmt.Sprintf("%s. %.1f °F / %.1f °C. Humidity %.0f%%. Wind from the %s at %.1f m/h / %.1f km/h. (%s)",
 		weatherConds, tempF, tempC, o.Main.Humidity, windDir, windSpeedMph, windSpeedKph, o.Name)
 }
 
-func getDirection(deg int) string {
-	return directions[int(float64(deg)/22.5+.5)%16]
+func getDirection(deg float64) string {
+	return directions[int(deg/22.5+.5)%16]
 }
 
 func fetchWeather(location string) (*owmData, error) {
@@ -137,10 +137,24 @@ func showWeather(conn *irc.Conn, line *irc.Line) {
 	target_nick := line.Nick
 	targeted := false
 
-	if strings.HasPrefix(location, "@") {
+	switch {
+	case strings.HasPrefix(location, "@"):
 		target_nick = strings.TrimSpace(strings.TrimPrefix(location, "@"))
 		location = ""
 		targeted = true
+	case strings.HasPrefix(location, "set "):
+		location = strings.TrimSpace(strings.TrimPrefix(location, "set "))
+		log.Printf("Updating location for %s to %s", line.Nick, location)
+		err := updateLocation(line.Nick, location)
+		if err != nil {
+			log.Println("Error updating location:", err)
+		}
+		return
+	case strings.HasPrefix(location, "help"):
+		result := fmt.Sprintf("%s: Check the weather! set will set your location (!w set San Francisco, CA),"+
+			" @ will show the weather for another nick (!w @sadbox), help will show this message.", line.Nick)
+		conn.Privmsg(line.Target(), result)
+		return
 	}
 
 	if location == "" || targeted {
@@ -155,22 +169,16 @@ func showWeather(conn *irc.Conn, line *irc.Line) {
 			if targeted {
 				result = fmt.Sprintf("%s: %s hasn't ever set a location.", line.Nick, target_nick)
 			} else {
-				result = fmt.Sprintf("%s: You need to specify a location at least once.", line.Nick)
+				result = fmt.Sprintf("%s: You need to specify a location at least once. (!w set San Francisco, CA)", line.Nick)
 			}
 			conn.Privmsg(line.Target(), result)
 			return
-		}
-	} else {
-		log.Printf("Updating location for %s to %s", line.Nick, location)
-		err := updateLocation(line.Nick, location)
-		if err != nil {
-			log.Println("Error updating location:", err)
 		}
 	}
 
 	weatherdata, err := fetchWeather(location)
 	if err != nil {
-		log.Println("Error fetching weather data...")
+		log.Println("Error fetching weather data...", err)
 		return
 	}
 	result := fmt.Sprintf("%s: %s", line.Nick, weatherdata.String())
