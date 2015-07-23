@@ -149,10 +149,22 @@ func showWeather(conn *irc.Conn, line *irc.Line) {
 		if err != nil {
 			log.Println("Error updating location:", err)
 		}
+		result := fmt.Sprintf("%s: Your location has been updated to %s.", line.Nick, location)
+		conn.Privmsg(line.Target(), result)
+		return
+	case strings.HasPrefix(location, "clear"):
+		log.Printf("Clearing stored location for %s", line.Nick)
+		err := updateLocation(line.Nick, "")
+		if err != nil {
+			log.Println("Error updating location:", err)
+		}
+		result := fmt.Sprintf("%s: Your location has been cleared in the database.", line.Nick)
+		conn.Privmsg(line.Target(), result)
 		return
 	case strings.HasPrefix(location, "help"):
 		result := fmt.Sprintf("%s: Check the weather! set will set your location (!w set San Francisco, CA),"+
-			" @ will show the weather for another nick (!w @sadbox), help will show this message.", line.Nick)
+			" clear will remove your stored location, @ will show the weather for another nick (!w @sadbox),"+
+			" and help will show this message.", line.Nick)
 		conn.Privmsg(line.Target(), result)
 		return
 	}
@@ -178,6 +190,8 @@ func showWeather(conn *irc.Conn, line *irc.Line) {
 
 	weatherdata, err := fetchWeather(location)
 	if err != nil {
+		result := fmt.Sprintf("%s: I can't seem to find anything for %s", line.Nick, location)
+		conn.Privmsg(line.Target(), result)
 		log.Println("Error fetching weather data...", err)
 		return
 	}
