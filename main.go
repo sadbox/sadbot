@@ -297,6 +297,7 @@ func main() {
 	c.HandleFunc(irc.PRIVMSG, btc)
 	c.HandleFunc(irc.PRIVMSG, lastSeen)
 	c.HandleFunc(irc.PRIVMSG, showWeather)
+	c.HandleFunc(irc.PRIVMSG, showQuote)
 	c.HandleFunc(irc.PRIVMSG, configCommands)
 
 	if err := c.Connect(); err != nil {
