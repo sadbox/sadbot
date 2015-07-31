@@ -17,8 +17,8 @@ func roll(conn *irc.Conn, line *irc.Line) {
 	if !strings.HasPrefix(line.Text(), "!roll") {
 		return
 	}
-	message := ""
 	rolls := strings.TrimSpace(strings.TrimPrefix(line.Text(), "!roll"))
+	allRolls := []string{}
 	for _, diceroll := range strings.Split(rolls, " ") {
 		if strings.TrimSpace(diceroll) == "" {
 			continue
@@ -30,8 +30,9 @@ func roll(conn *irc.Conn, line *irc.Line) {
 			log.Println("Error rolling dice:", err)
 			return
 		}
-		message += fmt.Sprintf("%s: %s   ", diceroll, diceResult.String())
+		allRolls = append(allRolls, fmt.Sprintf("%s: %s", diceroll, diceResult.String()))
 	}
+	message := strings.Join(allRolls, " \u00B7 ")
 	if message != "" {
 		message = line.Nick + ": " + message
 		conn.Privmsg(line.Target(), message)
