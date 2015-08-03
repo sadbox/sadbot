@@ -133,7 +133,7 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 	}
 	// Example:
 	// Title: sadbox . org (at sadbox.org)
-	hostNick := fmt.Sprintf(" (%s / %s)", postedUrl.Host, nick)
+	hostNick := fmt.Sprintf(" (%s)", postedUrl.Host)
 	formattedTitle := html.UnescapeString(title)
 	formattedTitle = findWhiteSpace.ReplaceAllString(formattedTitle, " ")
 	if len(formattedTitle) > conn.Config().SplitLen-len(hostNick)-1 {
