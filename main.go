@@ -19,7 +19,6 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -206,8 +205,6 @@ AllConfigs:
 
 func init() {
 	log.Println("Starting sadbot")
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
