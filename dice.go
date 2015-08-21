@@ -35,6 +35,7 @@ func roll(conn *irc.Conn, line *irc.Line) {
 	message := strings.Join(allRolls, " \u00B7 ")
 	if message != "" {
 		message = line.Nick + ": " + message
+		message = message[:conn.Config().SplitLen]
 		conn.Privmsg(line.Target(), message)
 	}
 }
