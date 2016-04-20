@@ -53,8 +53,8 @@ func meeba(conn *irc.Conn, line *irc.Line) {
 	meebcast.mutex.RLock()
 	defer meebcast.mutex.RUnlock()
 	if meebcast.status {
-		go conn.Privmsg(line.Target(), "Drinking Problem show is \u00030,3on air\u000f! Tune in: http://radio.abstractionpoint.org")
+		go conn.Privmsg(line.Target(), "The meebcats show is \u00030,3on air\u000f! Tune in: http://funkatize.me:8001/stream")
 	} else {
-		go conn.Privmsg(line.Target(), "Drinking Problem show is \u00030,4off the air\u000f! Tune in: http://radio.abstractionpoint.org")
+		go conn.Privmsg(line.Target(), "The meebcats show is \u00030,4off the air\u000f! Tune in: http://funkatize.me:8001/stream")
 	}
 }
