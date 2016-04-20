@@ -6,8 +6,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"database/sql"
 	"encoding/json"
+	//"flag"
 	"fmt"
 	"html"
 	"io"
@@ -26,6 +28,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	irc "github.com/fluffle/goirc/client"
+	//"github.com/fluffle/goirc/logging/glog"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mvdan/xurls"
 	"golang.org/x/net/html/charset"
@@ -238,6 +241,8 @@ func init() {
 }
 
 func main() {
+	//flag.Parse()
+	//glog.Init()
 	var err error
 	db, err = sql.Open("mysql", config.DBConn)
 	if err != nil {
@@ -259,6 +264,7 @@ func main() {
 
 	ircConfig := irc.NewConfig(config.Nick, config.Ident, config.FullName)
 	ircConfig.SSL = true
+	ircConfig.SSLConfig = &tls.Config{ServerName: FREENODE}
 	ircConfig.Server = FREENODE
 	ircConfig.Pass = config.Nick + ":" + config.IRCPass
 
@@ -275,7 +281,7 @@ func main() {
 	quit := make(chan bool)
 
 	c.HandleFunc(irc.DISCONNECTED,
-		func(conn *irc.Conn, line *irc.Line) { quit <- true })
+		func(conn *irc.Conn, line *irc.Line) { print("disconnected!"); quit <- true })
 
 	// Handle all the things
 	c.HandleFunc(irc.PRIVMSG, logMessage)
@@ -302,4 +308,5 @@ func main() {
 	}
 
 	<-quit
+	log.Fatal("SHITTING THE FUCK DOWN")
 }

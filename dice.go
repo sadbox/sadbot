@@ -23,7 +23,7 @@ func roll(conn *irc.Conn, line *irc.Line) {
 		if strings.TrimSpace(diceroll) == "" {
 			continue
 		}
-		diceResult, err := dice.Roll(diceroll)
+		diceResult, _, err := dice.Roll(diceroll)
 		if err != nil {
 			result := fmt.Sprintf("%s: That doesn't look right... (%s)", line.Nick, diceroll)
 			conn.Privmsg(line.Target(), result)
