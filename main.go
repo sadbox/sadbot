@@ -128,7 +128,7 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 		log.Println("Error parsing HTML tree:", err)
 		return
 	}
-	title := query.Find("title").Text()
+	title := query.Find("head").Find("title").First().Text()
 	title = strings.TrimSpace(title)
 	if len(title) == 0 || !utf8.ValidString(title) {
 		return
