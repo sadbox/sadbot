@@ -40,6 +40,7 @@ var (
 	findWhiteSpace = regexp.MustCompile(`\s+`)
 	db             *sql.DB
 	badWords       = make(map[string]*regexp.Regexp)
+	commands       []string
 )
 
 const FREENODE = "irc.freenode.net"
@@ -184,6 +185,14 @@ func cst(conn *irc.Conn, line *irc.Line) {
 	go conn.Privmsg(line.Target(), "\u00039,13#CSTMASTERRACE")
 }
 
+func stats(conn *irc.Conn, line *irc.Line) {
+	if getCommand(line) != "!stats" {
+		return
+	}
+	message := fmt.Sprintf("https://sadbox.org/%s/", strings.Trim(line.Target(), "#"))
+	go conn.Privmsg(line.Target(), message)
+}
+
 // Commands that are read in from the config file
 func configCommands(conn *irc.Conn, line *irc.Line) {
 	splitmessage := strings.Split(line.Text(), " ")
@@ -204,6 +213,30 @@ AllConfigs:
 			}
 		}
 	}
+}
+
+func showHelp(conn *irc.Conn, line *irc.Line) {
+	if getCommand(line) != "!help" {
+		return
+	}
+	tempCommands := commands[:]
+	for _, commandConfig := range config.Commands {
+		if commandConfig.Channel == line.Target() || commandConfig.Channel == "default" {
+		NextCommand:
+			for _, command := range commandConfig.Commands {
+				for _, existingCommand := range tempCommands {
+					if command.Name == existingCommand {
+						break NextCommand
+					}
+				}
+				tempCommands = append(tempCommands, command.Name)
+			}
+		}
+	}
+	lastCommand := tempCommands[len(tempCommands)-1]
+	commaCommands := strings.Join(tempCommands[:len(tempCommands)-1], ", ")
+	response := fmt.Sprintf("Available commands are %s, and %s.", commaCommands, lastCommand)
+	go conn.Privmsg(line.Target(), response)
 }
 
 func init() {
@@ -290,17 +323,32 @@ func main() {
 	c.HandleFunc(irc.PRIVMSG, checkForUrl)
 	c.HandleFunc(irc.ACTION, checkForUrl)
 
-	c.HandleFunc(irc.PRIVMSG, haata)
-	c.HandleFunc(irc.PRIVMSG, wolfram)
-	c.HandleFunc(irc.PRIVMSG, meeba)
+	// These are for sadbox only, because people can't be trusted.
 	c.HandleFunc(irc.PRIVMSG, markov)
 	c.HandleFunc(irc.PRIVMSG, dance)
 	c.HandleFunc(irc.PRIVMSG, cst)
+
+	c.HandleFunc(irc.PRIVMSG, showHelp)
+	commands = append(commands, "!help")
+	c.HandleFunc(irc.PRIVMSG, haata)
+	commands = append(commands, "!haata")
+	c.HandleFunc(irc.PRIVMSG, stats)
+	commands = append(commands, "!stats")
+	c.HandleFunc(irc.PRIVMSG, wolfram)
+	commands = append(commands, "!ask")
+	c.HandleFunc(irc.PRIVMSG, meeba)
+	commands = append(commands, "!meebcast")
 	c.HandleFunc(irc.PRIVMSG, roll)
+	commands = append(commands, "!roll")
 	c.HandleFunc(irc.PRIVMSG, btc)
+	commands = append(commands, "!btc")
 	c.HandleFunc(irc.PRIVMSG, lastSeen)
+	commands = append(commands, "!last")
 	c.HandleFunc(irc.PRIVMSG, showWeather)
+	commands = append(commands, "!w")
 	c.HandleFunc(irc.PRIVMSG, showQuote)
+	commands = append(commands, "!quote")
+
 	c.HandleFunc(irc.PRIVMSG, configCommands)
 
 	if err := c.Connect(); err != nil {
