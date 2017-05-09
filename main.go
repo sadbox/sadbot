@@ -153,7 +153,7 @@ func logMessage(conn *irc.Conn, line *irc.Line) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = updateWords(line.Nick, line.Text())
+	err = updateWords(line.Target(), line.Nick, line.Text(), true)
 	if err != nil {
 		log.Println(err)
 	}
