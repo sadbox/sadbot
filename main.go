@@ -95,6 +95,11 @@ func sendUrl(channel, unparsedURL string, conn *irc.Conn, nick string) {
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
 		log.Println("http server return error.")
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+		log.Println(string(body))
 		return
 	}
 	respbody := []byte{}
