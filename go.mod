@@ -3,7 +3,7 @@ module github.com/sadbox/sadbot
 go 1.15
 
 require (
-	github.com/PuerkitoBio/goquery v1.6.1
+	github.com/PuerkitoBio/goquery v1.7.0
 	github.com/fluffle/goirc v1.0.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/justinian/dice v1.0.1
