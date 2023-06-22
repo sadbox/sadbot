@@ -8,6 +8,6 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/justinian/dice v1.0.1
 	github.com/mvdan/xurls v1.1.0
-	github.com/tv42/base58 v0.0.0-20150113235651-b6649477bfe6
+	github.com/tv42/base58 v1.0.0
 	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4
 )
